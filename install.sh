@@ -11,13 +11,18 @@ DESKTOP_DIR="$DATA_HOME/applications"
 BIN_PATH="$BIN_DIR/coco"
 ALIAS_PATH="$BIN_DIR/coconut"
 DESKTOP_PATH="$DESKTOP_DIR/coconut.desktop"
+VENV_DIR="$APP_INSTALL_DIR/venv"
 
 SET_DEFAULT=1
+USE_VENV=0
 
 for arg in "$@"; do
   case "$arg" in
     --no-default)
       SET_DEFAULT=0
+      ;;
+    --venv|--pip)
+      USE_VENV=1
       ;;
     -h|--help)
       cat <<'EOF'
@@ -28,6 +33,7 @@ Usage:
 
 Options:
   --no-default   Install launcher and .desktop entry without setting Coconut as default for .md files
+  --venv, --pip  Create an isolated Python venv and install PyQt6 via pip (for Ubuntu 22.04 / Debian 11 / older distros)
   -h, --help     Show this help message
 EOF
       exit 0
@@ -45,29 +51,66 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! python3 -c "import PyQt6, PyQt6.QtWebEngineWidgets, PyQt6.QtWebChannel" >/dev/null 2>&1; then
-  cat >&2 <<'EOF'
+if [ "$USE_VENV" -eq 1 ]; then
+  mkdir -p "$APP_INSTALL_DIR"
+  if [ ! -x "$VENV_DIR/bin/python" ]; then
+    echo "==> Creating isolated Python environment at $VENV_DIR..."
+    if ! python3 -m venv "$VENV_DIR"; then
+      cat >&2 <<'EOF'
+Error: Could not create Python virtual environment.
+
+On Debian / Ubuntu (including Ubuntu 22.04 LTS / Debian 11), install:
+  sudo apt install python3-venv python3-pip libxcb-cursor0 libnss3 libasound2 cmark-gfm
+EOF
+      exit 1
+    fi
+  fi
+  echo "==> Installing PyQt6, PyQt6-WebEngine, and markdown inside venv..."
+  "$VENV_DIR/bin/pip" install --upgrade pip >/dev/null 2>&1 || true
+  "$VENV_DIR/bin/pip" install PyQt6 PyQt6-WebEngine markdown
+  if ! "$VENV_DIR/bin/python" -c "import PyQt6, PyQt6.QtWebEngineWidgets, PyQt6.QtWebChannel" >/dev/null 2>&1; then
+    echo "Error: PyQt6 WebEngine verification failed inside $VENV_DIR." >&2
+    exit 1
+  fi
+  if command -v ldconfig >/dev/null 2>&1 && ! ldconfig -p 2>/dev/null | grep -q "libxcb-cursor\.so\.0"; then
+    echo "Warning: libxcb-cursor0 was not detected; if Qt fails to start on X11, run:" >&2
+    echo "  sudo apt install libxcb-cursor0 libnss3 libasound2 cmark-gfm" >&2
+  fi
+  PYTHON_BIN="$VENV_DIR/bin/python"
+else
+  if [ -x /usr/bin/python3 ]; then
+    PYTHON_BIN="/usr/bin/python3"
+  else
+    PYTHON_BIN="$(command -v python3)"
+  fi
+
+  if ! "$PYTHON_BIN" -c "import PyQt6, PyQt6.QtWebEngineWidgets, PyQt6.QtWebChannel" >/dev/null 2>&1; then
+    cat >&2 <<'EOF'
 Error: Missing PyQt6 WebEngine dependencies.
 
 Install them for your distribution:
-  Debian / Ubuntu:
+  Debian 12/13 / Ubuntu 24.04+:
     sudo apt install python3-pyqt6 python3-pyqt6.qtwebengine python3-pyqt6.qtwebchannel cmark-gfm
+  Ubuntu 22.04 LTS / Debian 11 / older distros (isolated venv via pip):
+    sudo apt install cmark-gfm python3-venv python3-pip libxcb-cursor0 libnss3 libasound2
+    ./install.sh --venv
   Fedora:
     sudo dnf install python3-pyqt6 python3-pyqt6-webengine cmark-gfm-libs
   Arch Linux:
     sudo pacman -S python-pyqt6 python-pyqt6-webengine cmark-gfm
 EOF
-  exit 1
-fi
+    exit 1
+  fi
 
-if ! python3 -c "
+  if ! "$PYTHON_BIN" -c "
 import ctypes, ctypes.util
 has_cmark = bool(ctypes.util.find_library('cmark-gfm'))
 if not has_cmark:
     import markdown
 " >/dev/null 2>&1; then
-  echo "Warning: Neither libcmark-gfm nor python3-markdown was detected." >&2
-  echo "Install cmark-gfm (recommended) or python3-markdown so Coconut can render files." >&2
+    echo "Warning: Neither libcmark-gfm nor python3-markdown was detected." >&2
+    echo "Install cmark-gfm (recommended) or python3-markdown so Coconut can render files." >&2
+  fi
 fi
 
 echo "==> Installing Coconut to $APP_INSTALL_DIR..."
@@ -82,7 +125,7 @@ cp -f "$SCRIPT_DIR/assets/icons/coconut.svg" "$ICON_INSTALL_DIR/coconut.svg"
 
 cat >"$BIN_PATH" <<EOF
 #!/usr/bin/env bash
-exec /usr/bin/python3 "$APP_INSTALL_DIR/coconut/app.py" "\$@"
+exec "$PYTHON_BIN" "$APP_INSTALL_DIR/coconut/app.py" "\$@"
 EOF
 chmod +x "$BIN_PATH"
 ln -sf "$BIN_PATH" "$ALIAS_PATH"

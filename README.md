@@ -79,6 +79,12 @@ Install PyQt6 WebEngine and the C `libcmark-gfm` library (or `python3-markdown` 
   ```bash
   sudo apt install python3-pyqt6 python3-pyqt6.qtwebengine python3-pyqt6.qtwebchannel cmark-gfm
   ```
+- **Ubuntu 22.04 LTS / Debian 11 / older distros (isolated venv via `pip`):**
+  ```bash
+  sudo apt install cmark-gfm python3-venv python3-pip libxcb-cursor0 libnss3 libasound2
+  git clone https://github.com/Rhazieh/coconut.git && cd coconut
+  ./install.sh --venv
+  ```
 - **Fedora:**
   ```bash
   sudo dnf install python3-pyqt6 python3-pyqt6-webengine cmark-gfm-libs
@@ -93,7 +99,7 @@ Install PyQt6 WebEngine and the C `libcmark-gfm` library (or `python3-markdown` 
 **Option A — Debian / Ubuntu `.deb` package (from [Releases](https://github.com/Rhazieh/coconut/releases)):**
 
 ```bash
-sudo apt install ./coconut_1.3.0_all.deb
+sudo apt install ./coconut_1.3.1_all.deb
 ```
 
 **Option B — User-local install from source (no `sudo` required):**
@@ -126,10 +132,11 @@ Package maintainers can also build a `.deb` locally via `./packaging/build-deb.s
 Launch from your application menu (**Coconut**), double-click any `.md` file in Dolphin/Files, drag files onto the window, or run from terminal:
 
 ```bash
-coco path/to/notes.md     # open a file (reuses running process via fast IPC)
-coco                      # open welcome screen or restore previous session
-coco --standalone f.md    # force a separate process
-coco --version            # print version
+coco path/to/notes.md       # open a file (reuses running process via fast IPC)
+coco                        # open welcome screen or restore previous session
+coco --standalone f.md      # force a separate process
+coco --software-gpu f.md    # force software rendering (auto-enabled in VMs; override with --hardware-gpu)
+coco --version              # print version
 ```
 
 | Shortcut *(editable)* | Action |

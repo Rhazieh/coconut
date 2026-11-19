@@ -2,6 +2,12 @@
 
 All notable changes to **Coconut** (`coco`) are documented in this file.
 
+## [1.3.1] - 2026-11-19
+
+### Added
+- **Isolated `--venv` / `--pip` installer mode:** Added `./install.sh --venv` (alias `--pip`) for **Ubuntu 22.04 LTS, Debian 11, and older distributions** where `python3-pyqt6` is unavailable in `apt`, creating a self-contained virtual environment at `~/.local/share/coconut/venv` with `PyQt6`, `PyQt6-WebEngine`, and `markdown`, plus clearer system dependency instructions.
+- **Automatic VM software-rendering fallback & CLI GPU flags:** Added `--software-gpu` and `--hardware-gpu` CLI options (`COCONUT_SOFTWARE_GPU=1|0`) and automatic software WebEngine rendering (`--disable-gpu --disable-gpu-compositing`) on virtualized GPUs (VirtualBox/VMware SVGA, QEMU/Bochs, QXL) or environments without `/dev/dri/renderD*`, eliminating `GLX`/`DRI3`/`VA-API` startup errors on low-VRAM VMs while leaving hardware GPUs untouched.
+
 ## [1.3.0] - 2026-11-19
 
 ### Added

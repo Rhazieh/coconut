@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
+from collections.abc import Mapping, MutableMapping
 from pathlib import Path
 from typing import Any
 
@@ -50,16 +52,99 @@ def _resolve_icon_path() -> Path | None:
     return None
 
 
+VIRTUAL_GPU_VENDORS = frozenset({"0x15ad", "0x80ee", "0x1234", "0x1b36"})
+SOFTWARE_GPU_CHROMIUM_FLAGS = ("--disable-gpu", "--disable-gpu-compositing")
+
+
+def _read_drm_vendors(drm_sys: Path) -> set[str]:
+    """Read normalized PCI vendor IDs for DRM card devices."""
+    if not drm_sys.is_dir():
+        return set()
+    vendors: set[str] = set()
+    try:
+        entries = list(drm_sys.iterdir())
+    except OSError:
+        return vendors
+    for entry in entries:
+        if not re.fullmatch(r"card\d+", entry.name):
+            continue
+        try:
+            vendor = (entry / "device" / "vendor").read_text(encoding="utf-8").strip().lower()
+        except OSError:
+            continue
+        if vendor:
+            vendors.add(vendor)
+    return vendors
+
+
+def _has_dri_render_node(dri_dir: Path) -> bool:
+    """Return True if at least one /dev/dri/renderD* node exists."""
+    if not dri_dir.is_dir():
+        return False
+    try:
+        return any(True for _ in dri_dir.glob("renderD*"))
+    except OSError:
+        return False
+
+
+def should_use_software_gpu(
+    argv: list[str],
+    env: Mapping[str, str] | None = None,
+    dri_dir: Path = Path("/dev/dri"),
+    drm_sys: Path = Path("/sys/class/drm"),
+) -> bool:
+    """Determine whether WebEngine should disable GPU compositing (e.g. VMs / no DRM)."""
+    if "--software-gpu" in argv:
+        return True
+    if "--hardware-gpu" in argv:
+        return False
+
+    target_env = os.environ if env is None else env
+    override = target_env.get("COCONUT_SOFTWARE_GPU", "").strip().lower()
+    if override in {"1", "true", "yes", "on"}:
+        return True
+    if override in {"0", "false", "no", "off"}:
+        return False
+
+    vendors = _read_drm_vendors(drm_sys)
+    if vendors and all(v in VIRTUAL_GPU_VENDORS for v in vendors):
+        return True
+    if not _has_dri_render_node(dri_dir) and "0x10de" not in vendors:
+        return True
+    return False
+
+
+def configure_gpu_env(
+    argv: list[str],
+    env: MutableMapping[str, str] | None = None,
+    dri_dir: Path = Path("/dev/dri"),
+    drm_sys: Path = Path("/sys/class/drm"),
+) -> bool:
+    """Apply software-GPU Chromium flags before QApplication initializes if needed."""
+    target_env = os.environ if env is None else env
+    if not should_use_software_gpu(argv, env=target_env, dri_dir=dri_dir, drm_sys=drm_sys):
+        return False
+
+    existing = target_env.get("QTWEBENGINE_CHROMIUM_FLAGS", "").split()
+    for flag in SOFTWARE_GPU_CHROMIUM_FLAGS:
+        if flag not in existing:
+            existing.append(flag)
+    target_env["QTWEBENGINE_CHROMIUM_FLAGS"] = " ".join(existing)
+    return True
+
+
 def _print_help() -> None:
     print(
         f"{APP_NAME} {__version__} — Minimalist, eye-comfort Markdown viewer for Linux\n\n"
         "Usage:\n"
         "  coco [OPTIONS] [FILE...]\n\n"
         "Options:\n"
-        "  -h, --help         Show this help message and exit\n"
-        "  -v, --version      Show version and exit\n"
-        "      --standalone   Run a separate process instead of forwarding to existing instance\n"
-        "      --self-test F  Verify rendering and font loading on FILE and exit\n"
+        "  -h, --help          Show this help message and exit\n"
+        "  -v, --version       Show version and exit\n"
+        "      --standalone    Run a separate process instead of forwarding to existing instance\n"
+        "      --software-gpu  Force software WebEngine rendering (auto-enabled in VMs / no DRM)\n"
+        "      --hardware-gpu  Force hardware GPU rendering (disable VM auto-fallback)\n"
+        "      --self-test F   Verify rendering and font loading on FILE and exit\n"
     )
 
 
@@ -1080,6 +1165,10 @@ def create_qt_runtime() -> dict[str, Any]:
 
         js_probe = """
         (() => {
+          const contentEl = document.getElementById('content');
+          if (!document.body || !contentEl) {
+            return { contentLen: 0, fontLoaded: false };
+          }
           const fonts = Array.from(document.fonts).map(f => ({family: f.family, status: f.status}));
           const fontLoaded = fonts.some(f => f.family.includes('Atkinson Hyperlegible Next') && f.status === 'loaded');
           const bodyFont = getComputedStyle(document.body).fontFamily;
@@ -1090,8 +1179,8 @@ def create_qt_runtime() -> dict[str, Any]:
           const tocCount = document.querySelectorAll('#toc-list .toc-item').length;
           const theme = document.documentElement.getAttribute('data-theme');
           const bg = getComputedStyle(document.body).backgroundColor;
-          const fontSize = getComputedStyle(document.getElementById('content')).fontSize;
-          const contentLen = (document.getElementById('content').textContent || '').trim().length;
+          const fontSize = getComputedStyle(contentEl).fontSize;
+          const contentLen = (contentEl.textContent || '').trim().length;
           const hasSettingsBtn = Boolean(document.getElementById('btn-settings'));
           const hasFullscreenBtn = Boolean(document.getElementById('btn-fullscreen'));
           const hasFilesSection = Boolean(document.getElementById('files-section'));
@@ -1186,6 +1275,8 @@ def main() -> int:
     if "-v" in raw_argv or "--version" in raw_argv:
         print(f"{APP_NAME} {__version__}")
         return 0
+
+    configure_gpu_env(raw_argv)
 
     rt = create_qt_runtime()
     QApplication = rt["QApplication"]
