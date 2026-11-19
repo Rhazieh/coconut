@@ -53,7 +53,9 @@ Velum nació para resolver exactamente ese problema mediante un **flujo de desar
   | **Piedra suave** (`soft-light`) | `#F4F3EE` | `#2A2926` | `#3E6B89` | Luz diurna intensa |
 
 - **Medida y escala óptimas:** Ancho adaptable de `68ch` (`~65–72` caracteres por línea en cualquier tamaño), interlineado `1.72` y tamaño de texto persistente de `12` a `36 px` (`Ctrl++` / `Ctrl+-` / `Ctrl + rueda`).
-- **Cero ruido visual:** Sin barras de menú ni editor; índice lateral colapsable con *scrollspy* (se oculta automáticamente si el archivo tiene menos de 2 encabezados), línea superior de progreso de `2 px` y controles flotantes discretos.
+- **Cero ruido visual y archivos por carpeta:** Sin barras de menú ni editor; una barra lateral colapsable reúne el **Índice** con *scrollspy* (oculto en documentos cortos), los **archivos `.md` abiertos agrupados por carpeta desplegable** (persistentes entre reinicios hasta que los cerrás manualmente) y un discreto engranaje de **Ajustes** abajo a la izquierda (`Ctrl+,`).
+- **Google Translate con clic derecho:** Seleccioná cualquier fragmento al leer, hacé clic derecho y abrilo directamente en Google Translate con tu par de idiomas configurado (`Auto → ES`, `EN → ES`, `ES → EN` o entre 27 idiomas comunes — solo al hacer clic, sin tráfico en segundo plano).
+- **Pantalla completa y atajos editables:** Botón dedicado arriba a la derecha (`F11`) y editor visual de atajos dentro de Ajustes.
 
 ---
 
@@ -120,19 +122,21 @@ velum --standalone f.md   # fuerza un proceso independiente
 velum --version           # muestra la versión
 ```
 
-| Atajo | Acción |
+| Atajo *(editable)* | Acción |
 | :--- | :--- |
-| `Ctrl+O` | Abrir selector de archivos |
+| `Ctrl+O` | Abrir archivos (selección múltiple) |
 | `Ctrl++` / `Ctrl+-` / `Ctrl+0` | Aumentar / reducir / restablecer tamaño (`18 px`) |
 | `Ctrl + Rueda` | Ajustar tamaño de texto suavemente |
 | `Ctrl+T` | Cambiar paleta (`Noche cálida` → `Sepia papel` → `Piedra suave`) |
-| `Ctrl+B` | Mostrar u ocultar índice lateral |
+| `Ctrl+B` | Mostrar u ocultar panel lateral |
 | `Ctrl+F` | Buscar dentro del texto (`Enter` / `Shift+Enter`, `Esc` cierra) |
+| `Ctrl+,` | Abrir Ajustes (opciones, traductor, atajos, créditos) |
 | `j` / `k` | Desplazamiento vertical suave |
-| `F11` | Pantalla completa |
+| `F11` (o botón superior derecho) | Pantalla completa |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Cambiar al archivo abierto siguiente / anterior |
 | `Alt+←` / `Alt+→` (o botones laterales del mouse) | Navegar entre `.md` locales enlazados |
 | `Ctrl+R` / `F5` | Recargar manualmente (también recarga sola al guardar cambios) |
-| `Ctrl+W` / `Ctrl+Q` | Cerrar ventana / salir |
+| `Ctrl+W` / `Ctrl+Q` | Cerrar archivo actual / salir (conserva la sesión) |
 
 ---
 

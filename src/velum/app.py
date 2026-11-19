@@ -15,14 +15,19 @@ if str(APP_DIR) not in sys.path:
 from __init__ import APP_NAME, __version__  # noqa: E402
 from config import (  # noqa: E402
     DEFAULT_FONT_SIZE,
+    DEFAULT_SHORTCUTS,
     THEME_BG,
+    TRANSLATE_SOURCE_CODES,
+    TRANSLATE_TARGET_CODES,
+    VALID_LANGUAGES,
     VALID_THEMES,
     add_recent_file,
+    build_translate_url,
     clamp_font_size,
     load_config,
     save_config,
 )
-from i18n import get_strings, resolve_language  # noqa: E402
+from i18n import get_strings, get_translate_languages, resolve_language  # noqa: E402
 from renderer import render_markdown_file  # noqa: E402
 
 ASSETS_DIR = APP_DIR / "assets"
@@ -215,9 +220,45 @@ def create_qt_runtime() -> dict[str, Any]:
         def cycleTheme(self) -> None:
             self.win.controller.cycle_theme()
 
+        @pyqtSlot(str)
+        def setTheme(self, theme: str) -> None:
+            self.win.controller.set_theme(theme)
+
+        @pyqtSlot(str)
+        def setLanguage(self, lang: str) -> None:
+            self.win.controller.set_language(lang)
+
+        @pyqtSlot(str, bool)
+        def setSettingBool(self, key: str, value: bool) -> None:
+            self.win.controller.set_setting_bool(key, value)
+
+        @pyqtSlot(str, str)
+        def setTranslatePair(self, source: str, target: str) -> None:
+            self.win.controller.set_translate_pair(source, target)
+
+        @pyqtSlot(str, str)
+        def setShortcut(self, action: str, seq: str) -> None:
+            self.win.controller.set_shortcut(action, seq)
+
+        @pyqtSlot()
+        def resetShortcuts(self) -> None:
+            self.win.controller.reset_shortcuts()
+
+        @pyqtSlot(bool)
+        def setShortcutsEnabled(self, enabled: bool) -> None:
+            self.win.set_shortcuts_enabled(enabled)
+
         @pyqtSlot()
         def toggleSidebar(self) -> None:
             self.win.controller.toggle_sidebar()
+
+        @pyqtSlot()
+        def toggleFullscreen(self) -> None:
+            self.win.toggle_fullscreen()
+
+        @pyqtSlot()
+        def reloadCurrent(self) -> None:
+            self.win.reload_current()
 
         @pyqtSlot()
         def openFileDialog(self) -> None:
@@ -227,6 +268,21 @@ def create_qt_runtime() -> dict[str, Any]:
         def openRecentFile(self, path: str) -> None:
             if path:
                 self.win.open_file(Path(path), push_history=True)
+
+        @pyqtSlot(str)
+        def activateFile(self, path: str) -> None:
+            if path:
+                self.win.controller.activate_file(Path(path), push_history=True)
+
+        @pyqtSlot(str)
+        def closeFile(self, path: str) -> None:
+            if path:
+                self.win.controller.close_file(Path(path))
+
+        @pyqtSlot(str)
+        def toggleFolderCollapsed(self, folder: str) -> None:
+            if folder:
+                self.win.controller.toggle_folder_collapsed(folder)
 
         @pyqtSlot(str)
         def copyText(self, text: str) -> None:
@@ -245,6 +301,12 @@ def create_qt_runtime() -> dict[str, Any]:
         def clearFind(self) -> None:
             self.win.page.findText("")
 
+        @pyqtSlot(str)
+        def openExternalUrl(self, url: str) -> None:
+            parsed = QUrl(url)
+            if parsed.scheme().lower() in ("https", "http"):
+                QDesktopServices.openUrl(parsed)
+
     class ReaderWindow(QMainWindow):
         """Minimalist distraction-free Markdown reading window."""
 
@@ -258,6 +320,7 @@ def create_qt_runtime() -> dict[str, Any]:
 
             self._history: list[Path] = []
             self._history_idx = -1
+            self._shortcuts: list[QShortcut] = []
 
             self.setWindowTitle(APP_NAME)
             self.resize(
@@ -292,31 +355,63 @@ def create_qt_runtime() -> dict[str, Any]:
             self._reload_timer.setInterval(150)
             self._reload_timer.timeout.connect(self._reload_watched_file)
 
-            self._setup_shortcuts()
+            self.rebuild_shortcuts()
             self.view.load(QUrl.fromLocalFile(str(INDEX_HTML)))
 
-        def _setup_shortcuts(self) -> None:
-            bindings: list[tuple[str, Any]] = [
-                ("Ctrl+O", self.open_file_dialog),
-                ("Ctrl++", lambda: self.controller.adjust_font_size(1)),
-                ("Ctrl+=", lambda: self.controller.adjust_font_size(1)),
-                ("Ctrl+-", lambda: self.controller.adjust_font_size(-1)),
-                ("Ctrl+0", lambda: self.controller.set_font_size(DEFAULT_FONT_SIZE)),
-                ("Ctrl+B", self.controller.toggle_sidebar),
-                ("Ctrl+T", self.controller.cycle_theme),
-                ("Ctrl+F", self.open_find_bar),
-                ("F11", self.toggle_fullscreen),
-                ("Ctrl+R", self.reload_current),
-                ("F5", self.reload_current),
-                ("Alt+Left", self.go_back),
-                ("Alt+Right", self.go_forward),
-                ("Ctrl+W", self.close),
-                ("Ctrl+Q", QApplication.quit),
-            ]
-            for key, handler in bindings:
-                sc = QShortcut(QKeySequence(key), self)
+        def _shortcut_handlers(self) -> dict[str, Any]:
+            return {
+                "open_file": self.open_file_dialog,
+                "font_increase": lambda: self.controller.adjust_font_size(1),
+                "font_decrease": lambda: self.controller.adjust_font_size(-1),
+                "font_reset": lambda: self.controller.set_font_size(DEFAULT_FONT_SIZE),
+                "cycle_theme": self.controller.cycle_theme,
+                "toggle_sidebar": self.controller.toggle_sidebar,
+                "find": self.open_find_bar,
+                "fullscreen": self.toggle_fullscreen,
+                "reload": self.reload_current,
+                "go_back": self.go_back,
+                "go_forward": self.go_forward,
+                "next_file": lambda: self.controller.cycle_open_file(1),
+                "prev_file": lambda: self.controller.cycle_open_file(-1),
+                "close_file": self.close_current_file,
+                "open_settings": self.open_settings_modal,
+                "quit": QApplication.quit,
+            }
+
+        def rebuild_shortcuts(self) -> None:
+            for sc in self._shortcuts:
+                sc.setEnabled(False)
+                sc.deleteLater()
+            self._shortcuts.clear()
+
+            handlers = self._shortcut_handlers()
+            shortcuts_cfg = self.controller.config.get("shortcuts", DEFAULT_SHORTCUTS)
+            used_seqs = {v for v in shortcuts_cfg.values() if isinstance(v, str) and v}
+
+            for action, handler in handlers.items():
+                seq = shortcuts_cfg.get(action, "")
+                if not seq:
+                    continue
+                sc = QShortcut(QKeySequence(seq), self)
                 sc.setContext(Qt.ShortcutContext.WindowShortcut)
                 sc.activated.connect(handler)
+                self._shortcuts.append(sc)
+
+            # Helpful non-conflicting secondary aliases for keyboard layouts
+            if shortcuts_cfg.get("font_increase") == "Ctrl++" and "Ctrl+=" not in used_seqs:
+                sc_eq = QShortcut(QKeySequence("Ctrl+="), self)
+                sc_eq.setContext(Qt.ShortcutContext.WindowShortcut)
+                sc_eq.activated.connect(handlers["font_increase"])
+                self._shortcuts.append(sc_eq)
+            if shortcuts_cfg.get("reload") == "Ctrl+R" and "F5" not in used_seqs:
+                sc_f5 = QShortcut(QKeySequence("F5"), self)
+                sc_f5.setContext(Qt.ShortcutContext.WindowShortcut)
+                sc_f5.activated.connect(handlers["reload"])
+                self._shortcuts.append(sc_f5)
+
+        def set_shortcuts_enabled(self, enabled: bool) -> None:
+            for sc in self._shortcuts:
+                sc.setEnabled(enabled)
 
         def _run_js(self, script: str) -> None:
             if self.web_ready:
@@ -327,6 +422,13 @@ def create_qt_runtime() -> dict[str, Any]:
             self.setStyleSheet(f"QMainWindow {{ background-color: {bg}; }}")
             self.page.setBackgroundColor(QColor(bg))
 
+        def push_strings_to_web(self) -> None:
+            if not self.web_ready:
+                return
+            strings_json = json.dumps(self.controller.strings, ensure_ascii=False)
+            langs_json = json.dumps(get_translate_languages(self.controller.lang), ensure_ascii=False)
+            self._run_js(f"window.Velum && window.Velum.applyStrings({strings_json}, {langs_json});")
+
         def push_settings_to_web(self, toast_msg: str | None = None) -> None:
             cfg = self.controller.config
             self.apply_theme_background(cfg["theme"])
@@ -335,26 +437,42 @@ def create_qt_runtime() -> dict[str, Any]:
             payload = json.dumps({
                 "font_size": cfg["font_size"],
                 "theme": cfg["theme"],
+                "language": cfg["language"],
                 "sidebar_visible": cfg["sidebar_visible"],
+                "show_progress_bar": cfg["show_progress_bar"],
+                "auto_reload": cfg["auto_reload"],
+                "restore_session": cfg["restore_session"],
+                "translate_enabled": cfg["translate_enabled"],
+                "translate_source": cfg["translate_source"],
+                "translate_target": cfg["translate_target"],
+                "shortcuts": cfg["shortcuts"],
             })
             self._run_js(f"window.Velum && window.Velum.applySettings({payload});")
             if toast_msg:
                 self._run_js(f"window.Velum && window.Velum.showToast({json.dumps(toast_msg)});")
 
+        def push_session_to_web(self) -> None:
+            if not self.web_ready:
+                return
+            payload = json.dumps(self.controller.session_payload(), ensure_ascii=False)
+            self._run_js(f"window.Velum && window.Velum.updateSession({payload});")
+
         def on_web_ready(self) -> None:
             self.web_ready = True
-            self._run_js(
-                f"window.Velum && window.Velum.applyStrings({json.dumps(self.controller.strings)});"
-            )
+            self.push_strings_to_web()
             self.push_settings_to_web()
+            self.push_session_to_web()
+            self._run_js(
+                f"window.Velum && window.Velum.setFullscreenState({'true' if self.isFullScreen() else 'false'});"
+            )
             if self.pending_file is not None:
                 target = self.pending_file
                 self.pending_file = None
                 self.open_file(target, push_history=True)
             else:
-                self._show_welcome()
+                self.show_welcome()
 
-        def _show_welcome(self) -> None:
+        def show_welcome(self) -> None:
             self.current_file = None
             self.has_toc = False
             self.setWindowTitle(APP_NAME)
@@ -367,7 +485,7 @@ def create_qt_runtime() -> dict[str, Any]:
                 msg = self.controller.strings["toast_not_found"].format(name=resolved.name)
                 self._run_js(f"window.Velum && window.Velum.showToast({json.dumps(msg)});")
                 if self.current_file is None and self.web_ready:
-                    self._show_welcome()
+                    self.show_welcome()
                 return
 
             if not self.web_ready:
@@ -380,10 +498,18 @@ def create_qt_runtime() -> dict[str, Any]:
                     self._history.append(resolved)
                     self._history_idx = len(self._history) - 1
 
+            self.controller.register_open_file(resolved)
             self._watch_file(resolved)
             self.current_file = resolved
             self._load_and_render(resolved, preserve_scroll=False)
             self.controller.record_recent_file(str(resolved))
+            self.push_session_to_web()
+
+        def close_current_file(self) -> None:
+            if self.current_file is not None:
+                self.controller.close_file(self.current_file)
+            else:
+                self.close()
 
         def _watch_file(self, path: Path) -> None:
             existing = self.watcher.files()
@@ -392,9 +518,13 @@ def create_qt_runtime() -> dict[str, Any]:
             self.watcher.addPath(str(path))
 
         def _on_file_changed(self, _changed_path: str) -> None:
+            if not self.controller.config.get("auto_reload", True):
+                return
             self._reload_timer.start()
 
         def _reload_watched_file(self) -> None:
+            if not self.controller.config.get("auto_reload", True):
+                return
             if self.current_file is None or not self.current_file.is_file():
                 return
             path_str = str(self.current_file)
@@ -440,17 +570,20 @@ def create_qt_runtime() -> dict[str, Any]:
                 start_dir = docs_dir or str(Path.home())
 
             s = self.controller.strings
-            chosen, _ = QFileDialog.getOpenFileName(
+            chosen_list, _ = QFileDialog.getOpenFileNames(
                 self,
                 s["dialog_open_title"],
                 start_dir,
                 s["dialog_filter"],
             )
-            if chosen:
-                self.open_file(Path(chosen), push_history=True)
+            if chosen_list:
+                self.controller.add_files_to_session([Path(p) for p in chosen_list], activate_first=True)
 
         def open_find_bar(self) -> None:
             self._run_js("window.Velum && window.Velum.openFindBar();")
+
+        def open_settings_modal(self) -> None:
+            self._run_js("window.Velum && window.Velum.openSettings('reading');")
 
         def toggle_fullscreen(self) -> None:
             if self.isFullScreen():
@@ -458,43 +591,80 @@ def create_qt_runtime() -> dict[str, Any]:
             else:
                 self.showFullScreen()
 
+        def changeEvent(self, event: QEvent) -> None:
+            if event.type() == QEvent.Type.WindowStateChange:
+                self._run_js(
+                    f"window.Velum && window.Velum.setFullscreenState({'true' if self.isFullScreen() else 'false'});"
+                )
+            super().changeEvent(event)
+
         def _show_context_menu(self, pos: Any) -> None:
             s = self.controller.strings
+            sc = self.controller.config.get("shortcuts", DEFAULT_SHORTCUTS)
             menu = QMenu(self)
+
             if self.page.hasSelection():
+                selected = self.page.selectedText().strip()
                 act_copy = QAction(s["ctx_copy"], menu)
                 act_copy.triggered.connect(lambda: self.page.triggerAction(QWebEnginePage.WebAction.Copy))
                 menu.addAction(act_copy)
+
+                if selected and self.controller.config.get("translate_enabled", True):
+                    sl = self.controller.config.get("translate_source", "auto")
+                    tl = self.controller.config.get("translate_target", "es")
+                    pair_label = f"{'Auto' if sl == 'auto' else sl.upper()} → {tl.upper()}"
+                    act_tr = QAction(s["ctx_translate"].format(pair=pair_label), menu)
+                    tr_url = build_translate_url(selected, sl, tl)
+                    act_tr.triggered.connect(lambda _c=False, u=tr_url: QDesktopServices.openUrl(QUrl(u)))
+                    menu.addAction(act_tr)
                 menu.addSeparator()
 
-            act_open = QAction(s["ctx_open"], menu)
+            def _label(key: str, sc_key: str) -> str:
+                seq = sc.get(sc_key, "")
+                return f"{s[key]}\t{seq}" if seq else s[key]
+
+            act_open = QAction(_label("ctx_open", "open_file"), menu)
             act_open.triggered.connect(self.open_file_dialog)
             menu.addAction(act_open)
 
             menu.addSeparator()
 
-            act_inc = QAction(s["ctx_inc"], menu)
+            act_inc = QAction(_label("ctx_inc", "font_increase"), menu)
             act_inc.triggered.connect(lambda: self.controller.adjust_font_size(1))
             menu.addAction(act_inc)
 
-            act_dec = QAction(s["ctx_dec"], menu)
+            act_dec = QAction(_label("ctx_dec", "font_decrease"), menu)
             act_dec.triggered.connect(lambda: self.controller.adjust_font_size(-1))
             menu.addAction(act_dec)
 
-            act_reset = QAction(s["ctx_reset"], menu)
+            act_reset = QAction(_label("ctx_reset", "font_reset"), menu)
             act_reset.triggered.connect(lambda: self.controller.set_font_size(DEFAULT_FONT_SIZE))
             menu.addAction(act_reset)
 
             menu.addSeparator()
 
-            act_theme = QAction(s["ctx_theme"], menu)
+            act_theme = QAction(_label("ctx_theme", "cycle_theme"), menu)
             act_theme.triggered.connect(self.controller.cycle_theme)
             menu.addAction(act_theme)
 
-            if self.has_toc:
-                act_toc = QAction(s["ctx_toc"], menu)
-                act_toc.triggered.connect(self.controller.toggle_sidebar)
-                menu.addAction(act_toc)
+            act_toc = QAction(_label("ctx_toc", "toggle_sidebar"), menu)
+            act_toc.triggered.connect(self.controller.toggle_sidebar)
+            menu.addAction(act_toc)
+
+            act_fs = QAction(_label("ctx_fullscreen", "fullscreen"), menu)
+            act_fs.triggered.connect(self.toggle_fullscreen)
+            menu.addAction(act_fs)
+
+            if self.current_file is not None:
+                act_close = QAction(_label("ctx_close_file", "close_file"), menu)
+                act_close.triggered.connect(self.close_current_file)
+                menu.addAction(act_close)
+
+            menu.addSeparator()
+
+            act_settings = QAction(_label("ctx_settings", "open_settings"), menu)
+            act_settings.triggered.connect(self.open_settings_modal)
+            menu.addAction(act_settings)
 
             menu.exec(self.view.mapToGlobal(pos))
 
@@ -512,9 +682,7 @@ def create_qt_runtime() -> dict[str, Any]:
         def _handle_dropped_paths(self, paths: list[Path]) -> None:
             if not paths:
                 return
-            self.open_file(paths[0], push_history=True)
-            for extra in paths[1:]:
-                self.controller.open_new_window(extra)
+            self.controller.add_files_to_session(paths, activate_first=True)
 
         def dragEnterEvent(self, event: Any) -> None:
             if self._extract_dropped_paths(event.mimeData()):
@@ -559,15 +727,17 @@ def create_qt_runtime() -> dict[str, Any]:
             return super().eventFilter(obj, event)
 
         def closeEvent(self, event: Any) -> None:
-            if not self.controller.ephemeral and not self.isFullScreen():
-                self.controller.config["window_width"] = self.width()
-                self.controller.config["window_height"] = self.height()
+            if not self.controller.ephemeral:
+                if not self.isFullScreen():
+                    self.controller.config["window_width"] = self.width()
+                    self.controller.config["window_height"] = self.height()
+                self.controller.sync_session_to_config()
                 self.controller.persist_config()
             self.controller.unregister_window(self)
             super().closeEvent(event)
 
     class AppController(QObject):
-        """Coordinates settings, localization, single-instance IPC, and open windows."""
+        """Coordinates settings, multi-file session, localization, IPC, and windows."""
 
         def __init__(self, ephemeral: bool = False) -> None:
             super().__init__()
@@ -579,6 +749,23 @@ def create_qt_runtime() -> dict[str, Any]:
             self.server: QLocalServer | None = None
             self._ipc_buffers: dict[int, bytes] = {}
 
+            self.open_files: list[Path] = []
+            self.active_file: Path | None = None
+            self.collapsed_folders: set[str] = set(self.config.get("collapsed_folders", []))
+
+            if not ephemeral and self.config.get("restore_session", True):
+                for raw_path in self.config.get("open_files", []):
+                    p = Path(raw_path).expanduser().resolve()
+                    if p.is_file() and p not in self.open_files:
+                        self.open_files.append(p)
+                raw_active = self.config.get("active_file", "")
+                if raw_active:
+                    cand = Path(raw_active).expanduser().resolve()
+                    if cand in self.open_files:
+                        self.active_file = cand
+                if self.active_file is None and self.open_files:
+                    self.active_file = self.open_files[0]
+
         def persist_config(self) -> None:
             if self.ephemeral:
                 return
@@ -587,10 +774,106 @@ def create_qt_runtime() -> dict[str, Any]:
             except Exception:
                 pass
 
+        def sync_session_to_config(self) -> None:
+            if self.ephemeral:
+                return
+            if self.config.get("restore_session", True):
+                self.config["open_files"] = [str(p) for p in self.open_files]
+                self.config["active_file"] = str(self.active_file) if self.active_file else ""
+            else:
+                self.config["open_files"] = []
+                self.config["active_file"] = ""
+            self.config["collapsed_folders"] = sorted(self.collapsed_folders)
+
+        def session_payload(self) -> dict[str, Any]:
+            return {
+                "open_files": [str(p) for p in self.open_files],
+                "active_file": str(self.active_file) if self.active_file else "",
+                "collapsed_folders": sorted(self.collapsed_folders),
+            }
+
+        def broadcast_session(self) -> None:
+            self.sync_session_to_config()
+            self.persist_config()
+            for win in self.windows:
+                win.push_session_to_web()
+
         def broadcast_settings(self, toast_msg: str | None = None) -> None:
+            self.sync_session_to_config()
             self.persist_config()
             for win in self.windows:
                 win.push_settings_to_web(toast_msg)
+
+        def register_open_file(self, resolved: Path) -> None:
+            if resolved not in self.open_files:
+                self.open_files.append(resolved)
+            self.active_file = resolved
+            self.sync_session_to_config()
+            self.persist_config()
+
+        def add_files_to_session(self, paths: list[Path], activate_first: bool = True) -> None:
+            added: list[Path] = []
+            for p in paths:
+                resolved = p.expanduser().resolve()
+                if resolved.is_file():
+                    if resolved not in self.open_files:
+                        self.open_files.append(resolved)
+                    added.append(resolved)
+            if not added:
+                return
+            target = added[0] if activate_first else (self.active_file or added[0])
+            self.active_file = target
+            win = self._ensure_window(initial_file=target)
+            if win.web_ready:
+                win.open_file(target, push_history=True)
+            else:
+                win.pending_file = target
+            self.broadcast_session()
+
+        def activate_file(self, path: Path, push_history: bool = True) -> None:
+            resolved = path.expanduser().resolve()
+            if not resolved.is_file():
+                self.close_file(resolved)
+                return
+            win = self._ensure_window(initial_file=resolved)
+            win.open_file(resolved, push_history=push_history)
+
+        def close_file(self, path: Path) -> None:
+            resolved = path.expanduser().resolve()
+            if resolved not in self.open_files:
+                return
+            idx = self.open_files.index(resolved)
+            self.open_files.pop(idx)
+
+            if self.active_file == resolved:
+                if self.open_files:
+                    nxt = self.open_files[min(idx, len(self.open_files) - 1)]
+                    self.active_file = nxt
+                    for win in self.windows:
+                        win.open_file(nxt, push_history=False)
+                else:
+                    self.active_file = None
+                    for win in self.windows:
+                        win.show_welcome()
+            self.broadcast_session()
+
+        def cycle_open_file(self, delta: int) -> None:
+            if len(self.open_files) < 2:
+                return
+            try:
+                idx = self.open_files.index(self.active_file) if self.active_file else 0
+            except ValueError:
+                idx = 0
+            nxt = self.open_files[(idx + delta) % len(self.open_files)]
+            self.activate_file(nxt, push_history=False)
+
+        def toggle_folder_collapsed(self, folder: str) -> None:
+            if folder in self.collapsed_folders:
+                self.collapsed_folders.remove(folder)
+            else:
+                self.collapsed_folders.add(folder)
+            self.sync_session_to_config()
+            self.persist_config()
 
         def set_font_size(self, size: int) -> None:
             clamped = clamp_font_size(size)
@@ -601,16 +884,74 @@ def create_qt_runtime() -> dict[str, Any]:
             current = int(self.config.get("font_size", DEFAULT_FONT_SIZE))
             self.set_font_size(current + int(delta))
 
+        def set_theme(self, theme: str) -> None:
+            if theme not in VALID_THEMES:
+                return
+            self.config["theme"] = theme
+            label = self.strings.get(f"theme_{theme}", theme)
+            self.broadcast_settings(self.strings["toast_palette"].format(label=label))
+
         def cycle_theme(self) -> None:
             current = self.config.get("theme", "warm-dark")
             try:
                 idx = VALID_THEMES.index(current)
             except ValueError:
                 idx = 0
-            nxt = VALID_THEMES[(idx + 1) % len(VALID_THEMES)]
-            self.config["theme"] = nxt
-            label = self.strings.get(f"theme_{nxt}", nxt)
-            self.broadcast_settings(self.strings["toast_palette"].format(label=label))
+            self.set_theme(VALID_THEMES[(idx + 1) % len(VALID_THEMES)])
+
+        def set_language(self, lang_pref: str) -> None:
+            if lang_pref not in VALID_LANGUAGES:
+                return
+            self.config["language"] = lang_pref
+            self.lang = resolve_language(lang_pref)
+            self.strings = get_strings(self.lang)
+            self.persist_config()
+            for win in self.windows:
+                win.push_strings_to_web()
+                win.push_settings_to_web()
+
+        def set_setting_bool(self, key: str, value: bool) -> None:
+            allowed = {
+                "sidebar_visible",
+                "show_progress_bar",
+                "auto_reload",
+                "restore_session",
+                "translate_enabled",
+            }
+            if key not in allowed:
+                return
+            self.config[key] = bool(value)
+            self.broadcast_settings()
+
+        def set_translate_pair(self, source: str, target: str) -> None:
+            if source in TRANSLATE_SOURCE_CODES:
+                self.config["translate_source"] = source
+            if target in TRANSLATE_TARGET_CODES:
+                self.config["translate_target"] = target
+            self.broadcast_settings()
+
+        def set_shortcut(self, action: str, seq: str) -> None:
+            if action not in DEFAULT_SHORTCUTS:
+                return
+            cleaned = seq.strip()[:40]
+            shortcuts = dict(self.config.get("shortcuts", DEFAULT_SHORTCUTS))
+            if cleaned:
+                for other_action, other_seq in list(shortcuts.items()):
+                    if other_action != action and other_seq == cleaned:
+                        shortcuts[other_action] = ""
+            shortcuts[action] = cleaned
+            self.config["shortcuts"] = shortcuts
+            self.persist_config()
+            for win in self.windows:
+                win.rebuild_shortcuts()
+                win.push_settings_to_web(self.strings["toast_shortcut_saved"])
+
+        def reset_shortcuts(self) -> None:
+            self.config["shortcuts"] = dict(DEFAULT_SHORTCUTS)
+            self.persist_config()
+            for win in self.windows:
+                win.rebuild_shortcuts()
+                win.push_settings_to_web(self.strings["toast_shortcuts_reset"])
 
         def toggle_sidebar(self) -> None:
             self.config["sidebar_visible"] = not bool(self.config.get("sidebar_visible", True))
@@ -621,6 +962,15 @@ def create_qt_runtime() -> dict[str, Any]:
                 return
             add_recent_file(self.config, path)
             self.persist_config()
+
+        def _ensure_window(self, initial_file: Path | None = None) -> ReaderWindow:
+            if self.windows:
+                win = self.windows[0]
+                win.show()
+                win.raise_()
+                win.activateWindow()
+                return win
+            return self.open_new_window(initial_file=initial_file)
 
         def open_new_window(self, initial_file: Path | None = None) -> ReaderWindow:
             win = ReaderWindow(self, initial_file=initial_file)
@@ -636,32 +986,17 @@ def create_qt_runtime() -> dict[str, Any]:
 
         def open_paths(self, raw_paths: list[str]) -> None:
             if not raw_paths:
-                self.open_new_window(None)
+                if self.windows:
+                    win = self.windows[0]
+                    win.show()
+                    win.raise_()
+                    win.activateWindow()
+                else:
+                    self.open_new_window(self.active_file)
                 return
 
-            for path_str in raw_paths:
-                target = Path(path_str).expanduser().resolve()
-                existing = next(
-                    (w for w in self.windows if w.current_file is not None and w.current_file == target),
-                    None,
-                )
-                if existing is not None:
-                    existing.show()
-                    existing.raise_()
-                    existing.activateWindow()
-                    continue
-
-                welcome_win = next(
-                    (w for w in self.windows if w.current_file is None and w.pending_file is None),
-                    None,
-                )
-                if welcome_win is not None and len(raw_paths) == 1:
-                    welcome_win.open_file(target, push_history=True)
-                    welcome_win.show()
-                    welcome_win.raise_()
-                    welcome_win.activateWindow()
-                else:
-                    self.open_new_window(target)
+            resolved_list = [Path(p).expanduser().resolve() for p in raw_paths]
+            self.add_files_to_session(resolved_list, activate_first=True)
 
         def start_ipc_server(self, socket_name: str) -> None:
             QLocalServer.removeServer(socket_name)
@@ -756,6 +1091,10 @@ def create_qt_runtime() -> dict[str, Any]:
           const bg = getComputedStyle(document.body).backgroundColor;
           const fontSize = getComputedStyle(document.getElementById('content')).fontSize;
           const contentLen = (document.getElementById('content').textContent || '').trim().length;
+          const hasSettingsBtn = Boolean(document.getElementById('btn-settings'));
+          const hasFullscreenBtn = Boolean(document.getElementById('btn-fullscreen'));
+          const hasFilesSection = Boolean(document.getElementById('files-section'));
+          const hasSettingsModal = Boolean(document.getElementById('settings-modal'));
           return {
             fontLoaded,
             bodyFont,
@@ -765,7 +1104,11 @@ def create_qt_runtime() -> dict[str, Any]:
             theme,
             bg,
             fontSize,
-            contentLen
+            contentLen,
+            hasSettingsBtn,
+            hasFullscreenBtn,
+            hasFilesSection,
+            hasSettingsModal
           };
         })();
         """
@@ -784,6 +1127,10 @@ def create_qt_runtime() -> dict[str, Any]:
                 print(f"THEME={res.get('theme')}")
                 print(f"BG={res.get('bg')}")
                 print(f"FONT_SIZE={res.get('fontSize')}")
+                print(f"HAS_SETTINGS_BTN={res.get('hasSettingsBtn')}")
+                print(f"HAS_FULLSCREEN_BTN={res.get('hasFullscreenBtn')}")
+                print(f"HAS_FILES_SECTION={res.get('hasFilesSection')}")
+                print(f"HAS_SETTINGS_MODAL={res.get('hasSettingsModal')}")
                 print(f"JS_ERRORS={js_errs}")
                 for err in win.page.js_errors:
                     print(f"JS_ERROR_DETAIL={err}")
@@ -795,6 +1142,10 @@ def create_qt_runtime() -> dict[str, Any]:
                     and "Atkinson Hyperlegible Next" in str(res.get("preFont", ""))
                     and int(res.get("tocCount", 0)) > 0
                     and res.get("theme") == controller.config["theme"]
+                    and bool(res.get("hasSettingsBtn"))
+                    and bool(res.get("hasFullscreenBtn"))
+                    and bool(res.get("hasFilesSection"))
+                    and bool(res.get("hasSettingsModal"))
                     and js_errs == 0
                 )
                 finish(0 if ok else 1)

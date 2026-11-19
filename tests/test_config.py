@@ -1,4 +1,4 @@
-"""Unit tests for Velum's XDG configuration persistence."""
+"""Unit tests for Velum's XDG configuration, session persistence, and translate URLs."""
 
 from __future__ import annotations
 
@@ -27,26 +27,52 @@ class ConfigTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             os.environ["XDG_CONFIG_HOME"] = td
             try:
-                sample_md = Path(td) / "demo.md"
-                sample_md.write_text("# Demo\n", encoding="utf-8")
+                doc_a = Path(td) / "alpha.md"
+                doc_b = Path(td) / "beta.md"
+                doc_a.write_text("# Alpha\n", encoding="utf-8")
+                doc_b.write_text("# Beta\n", encoding="utf-8")
 
-                loaded_default = config.load_config()
-                self.assertEqual(loaded_default["font_size"], 18)
-                self.assertEqual(loaded_default["theme"], "warm-dark")
-                self.assertEqual(loaded_default["language"], "auto")
+                loaded = config.load_config()
+                self.assertEqual(loaded["font_size"], 18)
+                self.assertEqual(loaded["theme"], "warm-dark")
+                self.assertEqual(loaded["language"], "auto")
+                self.assertTrue(loaded["show_progress_bar"])
+                self.assertTrue(loaded["auto_reload"])
+                self.assertTrue(loaded["restore_session"])
+                self.assertTrue(loaded["translate_enabled"])
+                self.assertEqual(loaded["translate_source"], "auto")
+                self.assertEqual(loaded["translate_target"], "es")
+                self.assertEqual(loaded["shortcuts"], config.DEFAULT_SHORTCUTS)
 
-                loaded_default["font_size"] = 48
-                loaded_default["theme"] = "invalid-theme"
-                loaded_default["language"] = "es"
-                config.add_recent_file(loaded_default, str(sample_md))
-                config.add_recent_file(loaded_default, str(sample_md))
-                config.save_config(loaded_default)
+                loaded["font_size"] = 48
+                loaded["theme"] = "invalid-theme"
+                loaded["language"] = "es"
+                loaded["show_progress_bar"] = False
+                loaded["translate_source"] = "bad-code"
+                loaded["translate_target"] = "auto"  # invalid target
+                loaded["open_files"] = [str(doc_a), str(doc_b), "/nonexistent/ghost.md", str(doc_a)]
+                loaded["active_file"] = str(doc_b)
+                loaded["collapsed_folders"] = ["/tmp/docs", "/tmp/docs"]
+                loaded["shortcuts"] = {"open_file": "Ctrl+Shift+O", "unknown_action": "Ctrl+Z"}
+                config.add_recent_file(loaded, str(doc_a))
+                config.save_config(loaded)
 
                 reloaded = config.load_config()
                 self.assertEqual(reloaded["font_size"], config.MAX_FONT_SIZE)
                 self.assertEqual(reloaded["theme"], "warm-dark")
                 self.assertEqual(reloaded["language"], "es")
-                self.assertEqual(reloaded["recent_files"], [str(sample_md.resolve())])
+                self.assertFalse(reloaded["show_progress_bar"])
+                self.assertEqual(reloaded["translate_source"], "auto")
+                self.assertEqual(reloaded["translate_target"], "es")
+                self.assertEqual(
+                    reloaded["open_files"],
+                    [str(doc_a.resolve()), str(doc_b.resolve())],
+                )
+                self.assertEqual(reloaded["active_file"], str(doc_b.resolve()))
+                self.assertEqual(reloaded["collapsed_folders"], ["/tmp/docs"])
+                self.assertEqual(reloaded["shortcuts"]["open_file"], "Ctrl+Shift+O")
+                self.assertNotIn("unknown_action", reloaded["shortcuts"])
+                self.assertEqual(reloaded["recent_files"], [str(doc_a.resolve())])
             finally:
                 if prev is None:
                     os.environ.pop("XDG_CONFIG_HOME", None)
@@ -62,6 +88,16 @@ class ConfigTests(unittest.TestCase):
                 config.add_recent_file(cfg, str(p))
             self.assertEqual(len(cfg["recent_files"]), config.MAX_RECENT_FILES)
             self.assertTrue(cfg["recent_files"][0].endswith(f"doc-{config.MAX_RECENT_FILES + 3}.md"))
+
+    def test_build_translate_url_encoding_and_truncation(self) -> None:
+        url = config.build_translate_url("hello world & linux", source="en", target="es")
+        self.assertEqual(
+            url,
+            "https://translate.google.com/?sl=en&tl=es&text=hello%20world%20%26%20linux&op=translate",
+        )
+        long_url = config.build_translate_url("a" * 6000, source="bad", target="auto", max_chars=100)
+        self.assertIn("sl=auto&tl=es", long_url)
+        self.assertIn("text=" + ("a" * 100) + "&op=translate", long_url)
 
 
 if __name__ == "__main__":

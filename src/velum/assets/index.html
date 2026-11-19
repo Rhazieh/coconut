@@ -12,10 +12,30 @@
 
   <div id="app-layout">
     <aside id="toc-sidebar" class="sidebar-hidden" aria-label="Outline">
-      <div id="toc-header">
-        <span id="toc-doc-title">Velum</span>
+      <div id="toc-section" class="hidden">
+        <div id="toc-header">
+          <span id="toc-doc-title">Velum</span>
+        </div>
+        <nav id="toc-list"></nav>
       </div>
-      <nav id="toc-list"></nav>
+
+      <div id="files-section">
+        <div id="files-header">
+          <span id="files-title">Open files</span>
+          <button id="btn-files-add" type="button" class="mini-icon-btn" title="Add Markdown file…" aria-label="Add Markdown file">+</button>
+        </div>
+        <div id="files-list"></div>
+      </div>
+
+      <div id="sidebar-footer">
+        <button id="btn-settings" type="button" class="sidebar-footer-btn" title="Settings (Ctrl+,)" aria-label="Settings">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          <span id="btn-settings-label">Settings</span>
+        </button>
+      </div>
     </aside>
 
     <main id="reader-scroll" tabindex="-1">
@@ -28,8 +48,8 @@
             </svg>
           </div>
           <h1>Velum</h1>
-          <p id="welcome-sub" class="welcome-sub">Drop a <code>.md</code> file here or open one from disk.</p>
-          <button id="btn-welcome-open" type="button" class="primary-btn">Open file…</button>
+          <p id="welcome-sub" class="welcome-sub">Drop <code>.md</code> files here or open them from disk.</p>
+          <button id="btn-welcome-open" type="button" class="primary-btn">Open files…</button>
           <div id="recent-block" class="hidden">
             <div id="recent-label" class="recent-label">Recent</div>
             <ul id="recent-list"></ul>
@@ -38,7 +58,7 @@
             <span id="hint-open">Ctrl+O Open</span>
             <span id="hint-zoom">Ctrl+/− Text</span>
             <span id="hint-theme">Ctrl+T Palette</span>
-            <span id="hint-toc">Ctrl+B Outline</span>
+            <span id="hint-settings">Ctrl+, Settings</span>
           </p>
         </div>
       </section>
@@ -48,13 +68,13 @@
   </div>
 
   <div id="controls" role="toolbar" aria-label="Reading controls">
-    <button id="btn-toc" type="button" class="ctrl-btn" title="Outline (Ctrl+B)" aria-label="Toggle outline">
+    <button id="btn-toc" type="button" class="ctrl-btn" title="Outline & files (Ctrl+B)" aria-label="Toggle sidebar">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <rect x="3" y="4" width="18" height="16" rx="2"/>
         <line x1="9" y1="4" x2="9" y2="20"/>
       </svg>
     </button>
-    <button id="btn-open" type="button" class="ctrl-btn" title="Open file (Ctrl+O)" aria-label="Open file">
+    <button id="btn-open" type="button" class="ctrl-btn" title="Open files (Ctrl+O)" aria-label="Open files">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
       </svg>
@@ -70,6 +90,20 @@
         <path d="M12 3v2M12 19v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M3 12h2M19 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
       </svg>
     </button>
+    <button id="btn-fullscreen" type="button" class="ctrl-btn" title="Fullscreen (F11)" aria-label="Toggle fullscreen">
+      <svg class="icon-enter" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="15 3 21 3 21 9"/>
+        <polyline points="9 21 3 21 3 15"/>
+        <line x1="21" y1="3" x2="14" y2="10"/>
+        <line x1="3" y1="21" x2="10" y2="14"/>
+      </svg>
+      <svg class="icon-exit hidden" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="4 14 10 14 10 20"/>
+        <polyline points="20 10 14 10 14 4"/>
+        <line x1="14" y1="10" x2="21" y2="3"/>
+        <line x1="3" y1="21" x2="10" y2="14"/>
+      </svg>
+    </button>
   </div>
 
   <div id="find-bar" class="hidden" role="search" aria-label="Find in document">
@@ -77,6 +111,214 @@
     <button id="find-prev" type="button" class="ctrl-btn" title="Previous (Shift+Enter)" aria-label="Previous match">↑</button>
     <button id="find-next" type="button" class="ctrl-btn" title="Next (Enter)" aria-label="Next match">↓</button>
     <button id="find-close" type="button" class="ctrl-btn" title="Close (Esc)" aria-label="Close search">✕</button>
+  </div>
+
+  <!-- Minimalist Settings Modal -->
+  <div id="settings-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 id="settings-title">Settings</h2>
+        <button id="btn-settings-close" type="button" class="ctrl-btn" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-tabs" role="tablist">
+        <button id="tab-btn-reading" type="button" class="modal-tab active" data-tab="reading" role="tab">Reading</button>
+        <button id="tab-btn-translate" type="button" class="modal-tab" data-tab="translate" role="tab">Translate</button>
+        <button id="tab-btn-shortcuts" type="button" class="modal-tab" data-tab="shortcuts" role="tab">Shortcuts</button>
+        <button id="tab-btn-about" type="button" class="modal-tab" data-tab="about" role="tab">About</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Reading Tab -->
+        <section id="panel-reading" class="tab-panel">
+          <div class="setting-group">
+            <div id="sec-palette" class="group-label">Color palette</div>
+            <div class="theme-cards">
+              <button type="button" class="theme-card" data-theme-choice="warm-dark">
+                <span class="swatch swatch-dark"></span>
+                <span id="lbl-theme-warm-dark">Warm Night</span>
+              </button>
+              <button type="button" class="theme-card" data-theme-choice="sepia">
+                <span class="swatch swatch-sepia"></span>
+                <span id="lbl-theme-sepia">Paper Sepia</span>
+              </button>
+              <button type="button" class="theme-card" data-theme-choice="soft-light">
+                <span class="swatch swatch-light"></span>
+                <span id="lbl-theme-soft-light">Soft Stone</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="setting-group split-row">
+            <div>
+              <div id="sec-text-size" class="group-label">Text size</div>
+            </div>
+            <div class="stepper">
+              <button id="set-font-dec" type="button" class="pill-btn">−</button>
+              <span id="set-font-value" class="stepper-val">18 px</span>
+              <button id="set-font-inc" type="button" class="pill-btn">+</button>
+              <button id="set-font-reset" type="button" class="pill-btn subtle">18</button>
+            </div>
+          </div>
+
+          <div class="setting-group split-row">
+            <div>
+              <div id="sec-interface-lang" class="group-label">Interface language</div>
+            </div>
+            <select id="set-language" class="velum-select">
+              <option id="opt-lang-auto" value="auto">Automatic (System)</option>
+              <option id="opt-lang-en" value="en">English</option>
+              <option id="opt-lang-es" value="es">Español</option>
+            </select>
+          </div>
+
+          <div class="setting-group">
+            <div id="sec-behavior" class="group-label">Reader toggles</div>
+            <label class="toggle-row">
+              <div class="toggle-text">
+                <span id="opt-sidebar" class="toggle-title">Show outline &amp; open files sidebar</span>
+                <span id="opt-sidebar-desc" class="toggle-desc">Keep the left navigation panel visible while reading.</span>
+              </div>
+              <input id="chk-sidebar" type="checkbox" class="switch">
+            </label>
+            <label class="toggle-row">
+              <div class="toggle-text">
+                <span id="opt-progress" class="toggle-title">Show reading progress hairline</span>
+                <span id="opt-progress-desc" class="toggle-desc">Display a subtle 2 px progress indicator at the top edge.</span>
+              </div>
+              <input id="chk-progress" type="checkbox" class="switch">
+            </label>
+            <label class="toggle-row">
+              <div class="toggle-text">
+                <span id="opt-autoreload" class="toggle-title">Auto-reload when file changes on disk</span>
+                <span id="opt-autoreload-desc" class="toggle-desc">Refresh silently while preserving your scroll position.</span>
+              </div>
+              <input id="chk-autoreload" type="checkbox" class="switch">
+            </label>
+            <label class="toggle-row">
+              <div class="toggle-text">
+                <span id="opt-restore-session" class="toggle-title">Remember open files across restarts</span>
+                <span id="opt-restore-session-desc" class="toggle-desc">Keep opened documents across sessions until closed manually.</span>
+              </div>
+              <input id="chk-restore" type="checkbox" class="switch">
+            </label>
+          </div>
+
+          <div class="setting-group">
+            <div id="sec-quick-actions" class="group-label">Quick actions</div>
+            <div class="quick-actions-grid">
+              <button id="qa-open" type="button" class="action-card">
+                <span id="qa-open-lbl">Open files…</span>
+                <kbd id="qa-open-kbd" class="kbd-badge">Ctrl+O</kbd>
+              </button>
+              <button id="qa-find" type="button" class="action-card">
+                <span id="qa-find-lbl">Find in document</span>
+                <kbd id="qa-find-kbd" class="kbd-badge">Ctrl+F</kbd>
+              </button>
+              <button id="qa-fullscreen" type="button" class="action-card">
+                <span id="qa-fullscreen-lbl">Fullscreen mode</span>
+                <kbd id="qa-fullscreen-kbd" class="kbd-badge">F11</kbd>
+              </button>
+              <button id="qa-reload" type="button" class="action-card">
+                <span id="qa-reload-lbl">Reload document</span>
+                <kbd id="qa-reload-kbd" class="kbd-badge">Ctrl+R</kbd>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Translate Tab -->
+        <section id="panel-translate" class="tab-panel hidden">
+          <div class="setting-group">
+            <div id="sec-translate-toggle" class="group-label">Context menu translation</div>
+            <label class="toggle-row">
+              <div class="toggle-text">
+                <span id="opt-translate-enabled" class="toggle-title">Show Google Translate on right-click</span>
+                <span id="opt-translate-desc" class="toggle-desc">Adds an option when text is selected to open it directly in Google Translate.</span>
+              </div>
+              <input id="chk-translate" type="checkbox" class="switch">
+            </label>
+          </div>
+
+          <div class="setting-group">
+            <div id="sec-translate-presets" class="group-label">Quick language pairs</div>
+            <div class="preset-row">
+              <button type="button" class="pill-btn" data-tr-preset="auto:es">Auto → ES</button>
+              <button type="button" class="pill-btn" data-tr-preset="en:es">EN → ES</button>
+              <button type="button" class="pill-btn" data-tr-preset="es:en">ES → EN</button>
+              <button type="button" class="pill-btn" data-tr-preset="auto:en">Auto → EN</button>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <div id="sec-translate-pair" class="group-label">Language pair</div>
+            <div class="translate-pair-grid">
+              <label class="select-field">
+                <span id="lbl-translate-source">From</span>
+                <select id="set-tr-source" class="velum-select"></select>
+              </label>
+              <button id="btn-tr-swap" type="button" class="pill-btn swap-btn" title="Swap languages" aria-label="Swap languages">⇄</button>
+              <label class="select-field">
+                <span id="lbl-translate-target">To</span>
+                <select id="set-tr-target" class="velum-select"></select>
+              </label>
+            </div>
+          </div>
+
+          <p id="translate-privacy-note" class="note-box">
+            Offline by default: text is only sent to Google Translate in your browser when you click the context menu action.
+          </p>
+        </section>
+
+        <!-- Shortcuts Tab -->
+        <section id="panel-shortcuts" class="tab-panel hidden">
+          <div class="shortcuts-top">
+            <p id="sec-shortcuts-desc" class="shortcuts-hint">Click any shortcut pill and press a new key combination. Press Esc to cancel.</p>
+            <button id="btn-reset-shortcuts" type="button" class="pill-btn">Reset defaults</button>
+          </div>
+          <div id="shortcuts-list" class="shortcuts-list"></div>
+        </section>
+
+        <!-- About Tab -->
+        <section id="panel-about" class="tab-panel hidden">
+          <div class="about-hero">
+            <div class="about-icon" aria-hidden="true">
+              <svg width="42" height="42" viewBox="0 0 128 128" fill="none">
+                <rect x="8" y="8" width="112" height="112" rx="28" fill="#1D1C1A" stroke="#35322E" stroke-width="2"/>
+                <path d="M 30.6 34.0 H 45.0 C 46.6 34.0 47.8 34.8 48.5 36.2 L 64.0 66.0 V 96.0 C 64.0 96.0 62.5 95.8 61.7 94.5 L 28.8 37.4 C 27.9 35.8 28.9 34.0 30.6 34.0 Z" fill="#EFEAE1"/>
+                <path d="M 64.0 66.0 L 79.5 36.2 C 80.2 34.8 81.4 34.0 83.0 34.0 H 97.4 C 99.1 34.0 100.1 35.8 99.2 37.4 L 66.3 94.5 C 65.5 95.8 64.0 96.0 64.0 96.0 Z" fill="#E3B581"/>
+              </svg>
+            </div>
+            <div>
+              <div class="about-title-row">
+                <strong>Velum</strong>
+                <span class="version-pill">v1.1.0</span>
+              </div>
+              <p id="about-tagline" class="about-sub">Minimalist, local-first, eye-comfort Markdown viewer for Linux (Wayland &amp; X11).</p>
+            </div>
+          </div>
+
+          <div class="about-card">
+            <div id="about-credits-title" class="group-label">Credits &amp; Open Source Licenses</div>
+            <ul class="about-list">
+              <li id="about-author">Created by Maximiliano Cano (Rhazieh) — MIT License.</li>
+              <li id="about-font">Typography: Atkinson Hyperlegible Next (Braille Institute) — SIL OFL 1.1.</li>
+              <li id="about-engine">Rendering: libcmark-gfm / python-markdown + PyQt6 QtWebEngine.</li>
+            </ul>
+          </div>
+
+          <div class="about-card">
+            <div id="about-contribute-title" class="group-label">How to contribute</div>
+            <p id="about-contribute-body" class="about-copy">Velum stays viewer-only, offline, and distraction-free. You can report bugs, suggest ergonomic improvements, or open pull requests on GitHub.</p>
+            <div class="about-links">
+              <button id="lnk-repo" type="button" class="pill-btn">GitHub Repository</button>
+              <button id="lnk-issues" type="button" class="pill-btn">Report Issue</button>
+              <button id="lnk-contribute" type="button" class="pill-btn">Contributing Guide</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
   </div>
 
   <div id="drop-overlay" class="hidden" aria-hidden="true">

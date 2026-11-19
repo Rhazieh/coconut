@@ -53,7 +53,9 @@ Velum was built to solve that exact friction through an **AI-assisted developmen
   | **Soft Stone** (`soft-light`) | `#F4F3EE` | `#2A2926` | `#3E6B89` | Bright daylight |
 
 - **Optimal Measure & Scaling:** Adaptive `68ch` line width (`~65–72` characters per line at any size), `1.72` line height, and persistent `12–36 px` text sizing (`Ctrl++` / `Ctrl+-` / `Ctrl+Wheel`).
-- **Zero Chrome Clutter:** No menus, no toolbars, no split editor—just a collapsible outline sidebar with scrollspy (auto-hidden when a document has fewer than 2 headings), a subtle `2 px` reading progress hairline, and whisper-quiet floating controls.
+- **Zero Chrome Clutter & Multi-File Sidebar:** No menus, no toolbars, no split editor—just a collapsible left sidebar combining the scrollspy **Outline** (auto-hidden on short docs), **collapsible folder groups** for all open `.md` files (persisted across restarts like a notepad until manually closed), and a subtle bottom-left **Settings** gear (`Ctrl+,`).
+- **Right-Click Google Translate:** Select any word or passage while reading, right-click, and open it pre-filled in Google Translate using your configured language pair (`Auto → ES`, `EN → ES`, `ES → EN`, or 27 common languages—strictly on-click, zero background network calls).
+- **Fullscreen & Customizable Shortcuts:** Dedicated top-right fullscreen button (`F11`) plus a live shortcut editor inside Settings.
 
 ---
 
@@ -120,19 +122,21 @@ velum --standalone f.md   # force a separate process
 velum --version           # print version
 ```
 
-| Shortcut | Action |
+| Shortcut *(editable)* | Action |
 | :--- | :--- |
-| `Ctrl+O` | Open file picker |
+| `Ctrl+O` | Open files (multi-select) |
 | `Ctrl++` / `Ctrl+-` / `Ctrl+0` | Increase / decrease / reset text size (`18 px`) |
 | `Ctrl + Wheel` | Smoothly scale text size |
 | `Ctrl+T` | Cycle color palette (`Warm Night` → `Paper Sepia` → `Soft Stone`) |
-| `Ctrl+B` | Toggle outline sidebar |
+| `Ctrl+B` | Toggle outline & open-files sidebar |
 | `Ctrl+F` | Find in document (`Enter` / `Shift+Enter`, `Esc` to close) |
+| `Ctrl+,` | Open Settings (toggles, Google Translate pair, shortcuts, credits) |
 | `j` / `k` | Gentle vertical scroll |
-| `F11` | Fullscreen reading mode |
+| `F11` (or top-right button) | Fullscreen reading mode |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Switch to next / previous open file |
 | `Alt+←` / `Alt+→` (or Mouse Back/Forward) | Navigate between linked local `.md` files |
 | `Ctrl+R` / `F5` | Manual reload (also auto-reloads on disk edits) |
-| `Ctrl+W` / `Ctrl+Q` | Close window / quit |
+| `Ctrl+W` / `Ctrl+Q` | Close current file / quit (preserving session) |
 
 ---
 

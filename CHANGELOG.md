@@ -2,6 +2,17 @@
 
 All notable changes to **Velum** are documented in this file.
 
+## [1.1.0] - 2026-11-19
+
+### Added
+- **Multi-file session & collapsible folder groups:** Open multiple `.md` files simultaneously, grouped cleanly by parent folder (`FOLDERNAME`) beneath the reading outline in the left sidebar. Open files persist across restarts like a notepad until explicitly closed (`×`, middle-click, or `Ctrl+W`), remembering scroll position per document while switching.
+- **Minimalist Settings modal (`Ctrl+,`) via bottom-left gear button:**
+  - **Reading:** Palette cards, text size controls, live EN/ES/Auto language switcher, toggle switches (sidebar, progress hairline, auto-reload, session restore), and quick action buttons.
+  - **Translate:** Configurable right-click Google Translate option for selected text (`Auto` + 27 common languages, quick presets like `EN → ES` / `ES → EN`, language swap button).
+  - **Shortcuts:** Live shortcut editor for all 16 actions with automatic conflict clearing and one-click reset to defaults.
+  - **About:** Credits, open-source licenses (MIT + SIL OFL 1.1), and direct links to contribute on GitHub.
+- **Top-right Fullscreen button:** Dedicated button next to the palette switcher synchronized with `F11`.
+
 ## [1.0.0] - 2026-11-18
 
 ### Added
