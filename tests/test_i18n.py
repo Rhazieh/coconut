@@ -1,4 +1,4 @@
-"""Unit tests for Velum EN/ES localization and translation language tables."""
+"""Unit tests for Coconut EN/ES localization and translation language tables."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import sys
 import unittest
 from pathlib import Path
 
-SRC_DIR = Path(__file__).resolve().parent.parent / "src" / "velum"
+SRC_DIR = Path(__file__).resolve().parent.parent / "src" / "coconut"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 

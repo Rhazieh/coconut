@@ -1,8 +1,8 @@
-# Contributing to Velum / Contribuir a Velum
+# Contributing to Coconut / Contribuir a Coconut
 
-Thanks for taking an interest in **Velum**! / ¡Gracias por tu interés en **Velum**!
+Thanks for taking an interest in **Coconut** (`coco`)! / ¡Gracias por tu interés en **Coconut** (`coco`)!
 
-Velum is intentionally focused on one job: **fast, distraction-free, eye-comfort Markdown reading on Linux**.
+Coconut is intentionally focused on one job: **fast, distraction-free, eye-comfort Markdown reading on Linux**.
 
 ---
 
@@ -19,13 +19,13 @@ Velum is intentionally focused on one job: **fast, distraction-free, eye-comfort
 ## Development Setup / Entorno de Desarrollo
 
 ```bash
-git clone https://github.com/Rhazieh/velum.git
-cd velum
+git clone https://github.com/Rhazieh/coconut.git
+cd coconut
 python3 -m unittest discover -s tests -v
-python3 src/velum/app.py --standalone docs/demo.md
+python3 src/coconut/app.py --standalone docs/demo.md
 ```
 
 Before opening a pull request:
 - Keep functions small and clean; add docstrings and unit tests in `tests/` for new behavior.
-- Run `python3 -m py_compile src/velum/*.py tests/*.py`, `bash -n install.sh uninstall.sh`, and `python3 -m unittest discover -s tests -v`.
-- Verify GUI changes with `python3 src/velum/app.py --self-test docs/demo.md`.
+- Run `python3 -m py_compile src/coconut/*.py tests/*.py`, `bash -n install.sh uninstall.sh`, and `python3 -m unittest discover -s tests -v`.
+- Verify GUI changes with `python3 src/coconut/app.py --self-test docs/demo.md`.

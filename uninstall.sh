@@ -3,12 +3,13 @@ set -euo pipefail
 
 DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-BIN_PATH="$HOME/.local/bin/velum"
-APP_INSTALL_DIR="$DATA_HOME/velum"
+BIN_PATH="$HOME/.local/bin/coco"
+ALIAS_PATH="$HOME/.local/bin/coconut"
+APP_INSTALL_DIR="$DATA_HOME/coconut"
 FONT_INSTALL_DIR="$DATA_HOME/fonts/atkinson-hyperlegible-next"
-ICON_PATH="$DATA_HOME/icons/hicolor/scalable/apps/velum.svg"
-DESKTOP_PATH="$DATA_HOME/applications/velum.desktop"
-CONFIG_DIR="$CONFIG_HOME/velum"
+ICON_PATH="$DATA_HOME/icons/hicolor/scalable/apps/coconut.svg"
+DESKTOP_PATH="$DATA_HOME/applications/coconut.desktop"
+CONFIG_DIR="$CONFIG_HOME/coconut"
 
 PURGE=0
 
@@ -19,13 +20,13 @@ for arg in "$@"; do
       ;;
     -h|--help)
       cat <<'EOF'
-Uninstall Velum for the current user.
+Uninstall Coconut (coco) for the current user.
 
 Usage:
   ./uninstall.sh [OPTIONS]
 
 Options:
-  --purge    Also remove user settings (~/.config/velum)
+  --purge    Also remove user settings (~/.config/coconut)
   -h, --help Show this help message
 EOF
       exit 0
@@ -37,7 +38,7 @@ EOF
   esac
 done
 
-rm -f "$BIN_PATH" "$ICON_PATH" "$DESKTOP_PATH"
+rm -f "$BIN_PATH" "$ALIAS_PATH" "$ICON_PATH" "$DESKTOP_PATH"
 rm -rf "$APP_INSTALL_DIR" "$FONT_INSTALL_DIR"
 
 if [ "$PURGE" -eq 1 ]; then
@@ -62,7 +63,7 @@ elif command -v kbuildsycoca5 >/dev/null 2>&1; then
   kbuildsycoca5 >/dev/null 2>&1 || true
 fi
 
-echo "==> Velum uninstalled."
+echo "==> Coconut uninstalled."
 if [ "$PURGE" -eq 0 ] && [ -d "$CONFIG_DIR" ]; then
   echo "    Settings preserved at: $CONFIG_DIR (use --purge to remove)"
 fi

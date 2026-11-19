@@ -1275,7 +1275,7 @@ body {
   color: var(--text-muted);
 }
 
-.velum-select {
+.coco-select {
   appearance: none;
   border: 1px solid var(--border);
   background: var(--bg);
@@ -1287,7 +1287,7 @@ body {
   outline: none;
 }
 
-.velum-select:focus {
+.coco-select:focus {
   border-color: var(--accent);
 }
 
@@ -1422,7 +1422,7 @@ body {
   color: var(--text-muted);
 }
 
-.select-field .velum-select {
+.select-field .coco-select {
   width: 100%;
 }
 

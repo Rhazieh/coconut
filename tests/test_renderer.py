@@ -1,4 +1,4 @@
-"""Unit tests for Velum's Markdown renderer and HTML sanitizer."""
+"""Unit tests for Coconut's Markdown renderer and HTML sanitizer."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-SRC_DIR = Path(__file__).resolve().parent.parent / "src" / "velum"
+SRC_DIR = Path(__file__).resolve().parent.parent / "src" / "coconut"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 

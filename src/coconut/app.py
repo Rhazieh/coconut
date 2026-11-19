@@ -1,4 +1,4 @@
-"""Velum — Minimalist, local-first, eye-comfort Markdown viewer for Linux (Wayland & X11)."""
+"""Coconut — Minimalist, local-first, eye-comfort Markdown viewer for Linux (Wayland & X11)."""
 
 from __future__ import annotations
 
@@ -40,8 +40,8 @@ def _resolve_icon_path() -> Path | None:
     xdg_data = os.environ.get("XDG_DATA_HOME", "").strip()
     data_dir = Path(xdg_data).expanduser() if xdg_data else Path.home() / ".local" / "share"
     candidates = [
-        data_dir / "icons" / "hicolor" / "scalable" / "apps" / "velum.svg",
-        APP_DIR.parent.parent / "assets" / "icons" / "velum.svg",
+        data_dir / "icons" / "hicolor" / "scalable" / "apps" / "coconut.svg",
+        APP_DIR.parent.parent / "assets" / "icons" / "coconut.svg",
     ]
     for candidate in candidates:
         if candidate.is_file():
@@ -53,7 +53,7 @@ def _print_help() -> None:
     print(
         f"{APP_NAME} {__version__} — Minimalist, eye-comfort Markdown viewer for Linux\n\n"
         "Usage:\n"
-        "  velum [OPTIONS] [FILE...]\n\n"
+        "  coco [OPTIONS] [FILE...]\n\n"
         "Options:\n"
         "  -h, --help         Show this help message and exit\n"
         "  -v, --version      Show version and exit\n"
@@ -63,7 +63,7 @@ def _print_help() -> None:
 
 
 def create_qt_runtime() -> dict[str, Any]:
-    """Lazily import PyQt6 and construct Velum's GUI classes."""
+    """Lazily import PyQt6 and construct Coconut's GUI classes."""
     # Import QtWebChannel BEFORE QWebEngineView so qrc:///qtwebchannel/qwebchannel.js is registered.
     from PyQt6.QtCore import (
         QEvent,
@@ -427,7 +427,7 @@ def create_qt_runtime() -> dict[str, Any]:
                 return
             strings_json = json.dumps(self.controller.strings, ensure_ascii=False)
             langs_json = json.dumps(get_translate_languages(self.controller.lang), ensure_ascii=False)
-            self._run_js(f"window.Velum && window.Velum.applyStrings({strings_json}, {langs_json});")
+            self._run_js(f"window.Coconut && window.Coconut.applyStrings({strings_json}, {langs_json});")
 
         def push_settings_to_web(self, toast_msg: str | None = None) -> None:
             cfg = self.controller.config
@@ -447,15 +447,15 @@ def create_qt_runtime() -> dict[str, Any]:
                 "translate_target": cfg["translate_target"],
                 "shortcuts": cfg["shortcuts"],
             })
-            self._run_js(f"window.Velum && window.Velum.applySettings({payload});")
+            self._run_js(f"window.Coconut && window.Coconut.applySettings({payload});")
             if toast_msg:
-                self._run_js(f"window.Velum && window.Velum.showToast({json.dumps(toast_msg)});")
+                self._run_js(f"window.Coconut && window.Coconut.showToast({json.dumps(toast_msg)});")
 
         def push_session_to_web(self) -> None:
             if not self.web_ready:
                 return
             payload = json.dumps(self.controller.session_payload(), ensure_ascii=False)
-            self._run_js(f"window.Velum && window.Velum.updateSession({payload});")
+            self._run_js(f"window.Coconut && window.Coconut.updateSession({payload});")
 
         def on_web_ready(self) -> None:
             self.web_ready = True
@@ -463,7 +463,7 @@ def create_qt_runtime() -> dict[str, Any]:
             self.push_settings_to_web()
             self.push_session_to_web()
             self._run_js(
-                f"window.Velum && window.Velum.setFullscreenState({'true' if self.isFullScreen() else 'false'});"
+                f"window.Coconut && window.Coconut.setFullscreenState({'true' if self.isFullScreen() else 'false'});"
             )
             if self.pending_file is not None:
                 target = self.pending_file
@@ -477,13 +477,13 @@ def create_qt_runtime() -> dict[str, Any]:
             self.has_toc = False
             self.setWindowTitle(APP_NAME)
             recent_json = json.dumps(self.controller.config.get("recent_files", []))
-            self._run_js(f"window.Velum && window.Velum.showWelcome({recent_json});")
+            self._run_js(f"window.Coconut && window.Coconut.showWelcome({recent_json});")
 
         def open_file(self, path: Path, push_history: bool = True) -> None:
             resolved = path.expanduser().resolve()
             if not resolved.is_file():
                 msg = self.controller.strings["toast_not_found"].format(name=resolved.name)
-                self._run_js(f"window.Velum && window.Velum.showToast({json.dumps(msg)});")
+                self._run_js(f"window.Coconut && window.Coconut.showToast({json.dumps(msg)});")
                 if self.current_file is None and self.web_ready:
                     self.show_welcome()
                 return
@@ -537,20 +537,20 @@ def create_qt_runtime() -> dict[str, Any]:
                 doc = render_markdown_file(path)
             except Exception as exc:
                 msg = self.controller.strings["toast_open_error"].format(err=str(exc))
-                self._run_js(f"window.Velum && window.Velum.showToast({json.dumps(msg)});")
+                self._run_js(f"window.Coconut && window.Coconut.showToast({json.dumps(msg)});")
                 return
 
             self.has_toc = len(doc.get("toc", [])) >= 2
             self.setWindowTitle(f"{doc['filename']} — {APP_NAME}")
             doc_json = json.dumps(doc, ensure_ascii=False)
             preserve_js = "true" if preserve_scroll else "false"
-            self._run_js(f"window.Velum && window.Velum.renderDocument({doc_json}, {preserve_js});")
+            self._run_js(f"window.Coconut && window.Coconut.renderDocument({doc_json}, {preserve_js});")
 
         def reload_current(self) -> None:
             if self.current_file is not None and self.current_file.is_file():
                 self._load_and_render(self.current_file, preserve_scroll=True)
                 msg = self.controller.strings["toast_reloaded"]
-                self._run_js(f"window.Velum && window.Velum.showToast({json.dumps(msg)});")
+                self._run_js(f"window.Coconut && window.Coconut.showToast({json.dumps(msg)});")
 
         def go_back(self) -> None:
             if self._history_idx > 0:
@@ -580,10 +580,10 @@ def create_qt_runtime() -> dict[str, Any]:
                 self.controller.add_files_to_session([Path(p) for p in chosen_list], activate_first=True)
 
         def open_find_bar(self) -> None:
-            self._run_js("window.Velum && window.Velum.openFindBar();")
+            self._run_js("window.Coconut && window.Coconut.openFindBar();")
 
         def open_settings_modal(self) -> None:
-            self._run_js("window.Velum && window.Velum.openSettings('reading');")
+            self._run_js("window.Coconut && window.Coconut.openSettings('reading');")
 
         def toggle_fullscreen(self) -> None:
             if self.isFullScreen():
@@ -594,7 +594,7 @@ def create_qt_runtime() -> dict[str, Any]:
         def changeEvent(self, event: QEvent) -> None:
             if event.type() == QEvent.Type.WindowStateChange:
                 self._run_js(
-                    f"window.Velum && window.Velum.setFullscreenState({'true' if self.isFullScreen() else 'false'});"
+                    f"window.Coconut && window.Coconut.setFullscreenState({'true' if self.isFullScreen() else 'false'});"
                 )
             super().changeEvent(event)
 
@@ -1192,13 +1192,13 @@ def main() -> int:
     if "--self-test" in raw_argv:
         idx = raw_argv.index("--self-test")
         if idx + 1 >= len(raw_argv):
-            print("Usage: velum --self-test <file.md>", file=sys.stderr)
+            print("Usage: coco --self-test <file.md>", file=sys.stderr)
             return 2
         self_test_path = Path(raw_argv[idx + 1]).expanduser().resolve()
         standalone = True
 
     paths = normalize_cli_paths(raw_argv)
-    socket_name = f"velum-ipc-{os.getuid()}"
+    socket_name = f"coconut-ipc-{os.getuid()}"
 
     app = QApplication(sys.argv)
     if not standalone and try_send_to_running_instance(socket_name, paths):
@@ -1207,13 +1207,13 @@ def main() -> int:
     app.setApplicationName(APP_NAME)
     app.setApplicationDisplayName(APP_NAME)
     app.setApplicationVersion(__version__)
-    app.setDesktopFileName("velum")
+    app.setDesktopFileName("coconut")
 
     icon_path = _resolve_icon_path()
     if icon_path is not None:
-        app.setWindowIcon(QIcon.fromTheme("velum", QIcon(str(icon_path))))
+        app.setWindowIcon(QIcon.fromTheme("coconut", QIcon(str(icon_path))))
     else:
-        app.setWindowIcon(QIcon.fromTheme("velum"))
+        app.setWindowIcon(QIcon.fromTheme("coconut"))
 
     load_bundled_fonts(app)
 

@@ -1,15 +1,15 @@
 <p align="center">
-  <img src="assets/icons/velum.svg" width="92" height="92" alt="Velum logo"/>
+  <img src="assets/icons/coconut.svg" width="92" height="92" alt="Coconut logo"/>
 </p>
 
-<h1 align="center">Velum</h1>
+<h1 align="center">Coconut</h1>
 
 <p align="center">
   <strong>A fast, minimalist, local-first Markdown viewer engineered for hours of comfortable reading on Linux.</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Rhazieh/velum/actions/workflows/ci.yml"><img src="https://github.com/Rhazieh/velum/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+  <a href="https://github.com/Rhazieh/coconut/actions/workflows/ci.yml"><img src="https://github.com/Rhazieh/coconut/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-D4A373?style=flat-square" alt="MIT License"/></a>
   <img src="https://img.shields.io/badge/Linux-Wayland%20%26%20X11-2E2C29?style=flat-square" alt="Wayland and X11"/>
   <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square" alt="Python 3.10+"/>
@@ -22,13 +22,13 @@
 
 ---
 
-## Why Velum?
+## Why Coconut (`coco`)?
 
 Most Markdown apps on Linux or the web are built as **editors first**—splitting your screen between raw `**syntax**` and preview, locking clean reading layouts behind subscriptions, refusing distraction-free fullscreen, or asking you to paste private local notes into third-party websites.
 
-I just wanted to double-click a `.md` file and **read it cleanly, fast, and completely offline**, without seeing raw code or sacrificing my eyes after hours of studying technical documentation.
+I just wanted to double-click a `.md` file (or run `coco notes.md`) and **read it cleanly, fast, and completely offline**, without seeing raw code or sacrificing my eyes after hours of studying technical documentation.
 
-Velum was built to solve that exact friction through an **AI-assisted development workflow** paired with deliberate ergonomic research, low-halation color calibration, and native Freedesktop/Wayland integration.
+Like a real coconut—**warm dark roasted shell on the outside (`#191817`), soft cream interior on the inside (`#DCD7CE` / `#F3ECDC`)**—it was built through an **AI-assisted development workflow** paired with deliberate ergonomic research, anti-halation contrast calibration, and native Freedesktop/Wayland integration.
 
 ---
 
@@ -36,14 +36,14 @@ Velum was built to solve that exact friction through an **AI-assisted developmen
 
 | Warm Night (`warm-dark`, default) | Paper Sepia (`sepia`) |
 | :---: | :---: |
-| ![Velum Warm Night](docs/screenshots/velum-warm-dark.png) | ![Velum Paper Sepia](docs/screenshots/velum-sepia.png) |
+| ![Coconut Warm Night](docs/screenshots/coconut-warm-dark.png) | ![Coconut Paper Sepia](docs/screenshots/coconut-sepia.png) |
 
 ---
 
 ## Ergonomic Design & Eye Comfort
 
 - **One Typeface Everywhere:** Entire UI and prose use [**Atkinson Hyperlegible Next**](https://github.com/googlefonts/atkinson-hyperlegible-next) (Braille Institute), bundled locally under SIL OFL 1.1. Distinct glyph forms (`1`/`l`/`I`, `0`/`O`), large x-height, and open apertures eliminate micro-decoding fatigue across prose, tables, file paths, and terminal commands (`Noto Color Emoji` handles emoji glyphs only).
-- **Anti-Halation Contrast Calibration:** Pure `#FFFFFF` on `#000000` (`21:1`) causes light scatter (*halation*) and eye strain. Velum defaults to **Warm Night** (`#DCD7CE` on `#191817`, `~12.4:1` WCAG AAA contrast) with warm amber accents (`#D4A373`) to avoid harsh blue-light glare.
+- **Anti-Halation Contrast Calibration:** Pure `#FFFFFF` on `#000000` (`21:1`) causes light scatter (*halation*) and eye strain. Coconut defaults to **Warm Night** (`#DCD7CE` on `#191817`, `~12.4:1` WCAG AAA contrast) with toasted amber accents (`#D4A373`) to avoid harsh blue-light glare.
 - **Three Instant Palettes (`Ctrl+T`):**
 
   | Palette | Canvas | Body Text | Accent | Best For |
@@ -61,11 +61,11 @@ Velum was built to solve that exact friction through an **AI-assisted developmen
 
 ## Linux Compatibility
 
-Velum targets **modern Linux desktops on both Wayland and X11** (Qt6 selects `wayland` or `xcb` automatically based on your session):
+Coconut targets **modern Linux desktops on both Wayland and X11** (Qt6 selects `wayland` or `xcb` automatically based on your session):
 
 - **Display Servers:** Native Wayland (`wayland-egl`) & X11 (`xcb`).
 - **Desktop Environments & WMs:** KDE Plasma 6/5, GNOME, Hyprland, Sway, XFCE, Cinnamon, LXQt, and any Freedesktop-compliant environment (`XDG_DATA_HOME`, `XDG_CONFIG_HOME`, `xdg-mime`).
-- **Interface Language:** Automatically matches English or Spanish from your system locale (override anytime via `"language": "en"` or `"es"` in `~/.config/velum/settings.json`).
+- **Interface Language:** Automatically matches English or Spanish from your system locale (or switch live anytime in Settings / `~/.config/coconut/settings.json`).
 
 ---
 
@@ -88,15 +88,15 @@ Install PyQt6 WebEngine and the C `libcmark-gfm` library (or `python3-markdown` 
   sudo pacman -S python-pyqt6 python-pyqt6-webengine cmark-gfm
   ```
 
-### 2. Install Velum (user-local, no `sudo` required)
+### 2. Install Coconut (user-local, no `sudo` required)
 
 ```bash
-git clone https://github.com/Rhazieh/velum.git
-cd velum
+git clone https://github.com/Rhazieh/coconut.git
+cd coconut
 ./install.sh
 ```
 
-To install without making Velum the default `.md` file handler:
+This installs the `coco` command (plus `coconut` alias) and sets Coconut as the default `.md` viewer. To install without changing your default `.md` file handler:
 
 ```bash
 ./install.sh --no-default
@@ -105,7 +105,7 @@ To install without making Velum the default `.md` file handler:
 ### Uninstall
 
 ```bash
-./uninstall.sh          # keeps ~/.config/velum/settings.json
+./uninstall.sh          # keeps ~/.config/coconut/settings.json
 ./uninstall.sh --purge  # removes settings too
 ```
 
@@ -113,13 +113,13 @@ To install without making Velum the default `.md` file handler:
 
 ## Usage & Shortcuts
 
-Launch from your application menu, double-click any `.md` file in Dolphin/Files, drag a file onto the window, or run from terminal:
+Launch from your application menu (**Coconut**), double-click any `.md` file in Dolphin/Files, drag files onto the window, or run from terminal:
 
 ```bash
-velum path/to/notes.md    # open a file (reuses running process via fast IPC)
-velum                     # open welcome screen with recent files
-velum --standalone f.md   # force a separate process
-velum --version           # print version
+coco path/to/notes.md     # open a file (reuses running process via fast IPC)
+coco                      # open welcome screen or restore previous session
+coco --standalone f.md    # force a separate process
+coco --version            # print version
 ```
 
 | Shortcut *(editable)* | Action |
@@ -143,14 +143,14 @@ velum --version           # print version
 ## Architecture & Security
 
 - **Fast Rendering:** Calls system `libcmark-gfm` directly via Python `ctypes` (~11–13 ms for 5,000+ words) with automatic `python-markdown` fallback.
-- **Sanitized & Strict CSP:** Strips `<script>`, `<iframe>`, `<object>`, `<embed>`, event handlers (`on*`), and `javascript:` / unsafe `data:` URIs before injecting into the DOM; enforces a strict `Content-Security-Policy` with zero inline scripts.
+- **Sanitized & Strict CSP:** Strips `<script>`, `<iframe>`, `<object>`, `<embed>`, `<svg>`, event handlers (`on*`), and `javascript:` / unsafe `data:` URIs before injecting into the DOM; enforces a strict `Content-Security-Policy` with zero inline scripts.
 - **Zero-Flash Startup & Live Reload:** Applies background color on both `QMainWindow` and `QWebEnginePage` before loading the DOM, watches the active file via `QFileSystemWatcher` (handling atomic editor saves while preserving scroll position), and routes new launches through a per-user `QLocalServer` Unix socket.
 
 ---
 
 ## Part of a Local-First Linux Suite
 
-Velum is the first utility in a personal collection of small, open-source, offline Linux desktop tools built to replace bloated or cloud-tethered apps—with a minimalist EPUB reader on the roadmap next.
+Coconut is the first utility in a personal collection of small, open-source, offline Linux desktop tools built to replace bloated or cloud-tethered apps—with a minimalist EPUB reader on the roadmap next.
 
 ---
 

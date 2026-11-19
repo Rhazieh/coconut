@@ -26,7 +26,7 @@ jobs:
 
       - name: Syntax check Python and shell scripts
         run: |
-          python3 -m py_compile src/velum/*.py tests/*.py
+          python3 -m py_compile src/coconut/*.py tests/*.py
           bash -n install.sh uninstall.sh
 
       - name: Run unit tests

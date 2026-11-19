@@ -1,4 +1,4 @@
-"""Persistent XDG-compliant settings management for Velum."""
+"""Persistent XDG-compliant settings management for Coconut."""
 
 from __future__ import annotations
 
@@ -100,14 +100,14 @@ DEFAULT_CONFIG: dict[str, Any] = {
 
 
 def get_config_dir() -> Path:
-    """Return XDG-compliant configuration directory for Velum."""
+    """Return XDG-compliant configuration directory for Coconut."""
     xdg = os.environ.get("XDG_CONFIG_HOME", "").strip()
     base = Path(xdg).expanduser() if xdg else Path.home() / ".config"
-    return base / "velum"
+    return base / "coconut"
 
 
 def get_config_file() -> Path:
-    """Return path to Velum's settings.json."""
+    """Return path to Coconut's settings.json."""
     return get_config_dir() / "settings.json"
 
 

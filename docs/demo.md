@@ -7,7 +7,7 @@
 
 ## 1. Typography & Single-Font Hierarchy
 
-Instead of forcing your eyes to jump between incompatible serif, sans, and harsh monospace fonts, **Velum** renders the entire interface and document in **Atkinson Hyperlegible Next**:
+Instead of forcing your eyes to jump between incompatible serif, sans, and harsh monospace fonts, **Coconut** renders the entire interface and document in **Atkinson Hyperlegible Next**:
 
 - Unambiguous glyphs (`1`, `l`, `I` and `0`, `O`) eliminate micro-decoding strain in paths like `/etc/systemd/system` or commands like `ip -br addr`.
 - Generous `1.72` line height and an adaptive `68ch` line measure keep paragraphs scannable regardless of whether you read at `16 px` or `24 px`.
@@ -16,17 +16,17 @@ Instead of forcing your eyes to jump between incompatible serif, sans, and harsh
 ### Quick Terminal Setup
 
 ```bash
-git clone https://github.com/Rhazieh/velum.git
-cd velum
+git clone https://github.com/Rhazieh/coconut.git
+cd coconut
 ./install.sh
-velum docs/demo.md
+coco docs/demo.md
 ```
 
 ---
 
 ## 2. Eye-Comfort Palettes
 
-Pure `#FFFFFF` on `#000000` (21:1 contrast) triggers **halation**—a faint glow around letters that tires the eyes over multi-hour sessions. Velum calibrates contrast around **~12.4:1** using warm charcoal and paper tones:
+Pure `#FFFFFF` on `#000000` (21:1 contrast) triggers **halation**—a faint glow around letters that tires the eyes over multi-hour sessions. Coconut pairs a dark roasted shell with soft cream interiors (~12.4:1 contrast):
 
 | Palette | Canvas | Body Text | Accent | Best Environment |
 | :--- | :--- | :--- | :--- | :--- |

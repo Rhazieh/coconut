@@ -109,7 +109,7 @@
     about_font: "Typography: Atkinson Hyperlegible Next (Braille Institute) — SIL OFL 1.1.",
     about_engine: "Rendering: libcmark-gfm / python-markdown + PyQt6 QtWebEngine.",
     about_contribute_title: "How to contribute",
-    about_contribute_body: "Velum stays viewer-only, offline, and distraction-free. You can report bugs, suggest ergonomic improvements, or open pull requests on GitHub.",
+    about_contribute_body: "Coconut stays viewer-only, offline, and distraction-free. You can report bugs, suggest ergonomic improvements, or open pull requests on GitHub.",
     btn_github_repo: "GitHub Repository",
     btn_report_issue: "Report Issue",
     btn_contribute: "Contributing Guide",
@@ -614,7 +614,7 @@
     state.tocElements = [];
     state.tocButtons.clear();
     state.activeId = null;
-    tocDocTitle.textContent = docTitle || "Velum";
+    tocDocTitle.textContent = docTitle || "Coconut";
 
     if (!Array.isArray(toc) || toc.length === 0) return;
 
@@ -713,7 +713,7 @@
 
     enhanceCodeBlocks();
     wireInternalAnchors();
-    buildToc(doc.toc || [], doc.title || doc.filename || "Velum");
+    buildToc(doc.toc || [], doc.title || doc.filename || "Coconut");
     updateSidebarVisibility();
 
     requestAnimationFrame(() => {
@@ -1067,13 +1067,13 @@
   });
 
   lnkRepo.addEventListener("click", () => {
-    if (bridge) bridge.openExternalUrl("https://github.com/Rhazieh/velum");
+    if (bridge) bridge.openExternalUrl("https://github.com/Rhazieh/coconut");
   });
   lnkIssues.addEventListener("click", () => {
-    if (bridge) bridge.openExternalUrl("https://github.com/Rhazieh/velum/issues");
+    if (bridge) bridge.openExternalUrl("https://github.com/Rhazieh/coconut/issues");
   });
   lnkContribute.addEventListener("click", () => {
-    if (bridge) bridge.openExternalUrl("https://github.com/Rhazieh/velum/blob/main/CONTRIBUTING.md");
+    if (bridge) bridge.openExternalUrl("https://github.com/Rhazieh/coconut/blob/main/CONTRIBUTING.md");
   });
 
   // Find bar wiring
@@ -1174,7 +1174,7 @@
     dropOverlay.classList.add("hidden");
   });
 
-  window.Velum = {
+  window.Coconut = {
     applyStrings,
     applySettings,
     updateSession,

@@ -1,6 +1,6 @@
 ---
 name: Feature request / Sugerencia
-about: Suggest a focused improvement aligned with Velum's minimalist reader philosophy
+about: Suggest a focused improvement aligned with Coconut's minimalist reader philosophy
 title: "[Feature]: "
 labels: enhancement
 ---
@@ -9,4 +9,4 @@ labels: enhancement
 Explain what makes reading uncomfortable or slow right now.
 
 **Proposed idea / Idea propuesta**
-Keep in mind Velum stays viewer-only, offline, and distraction-free.
+Keep in mind Coconut stays viewer-only, offline, and distraction-free.

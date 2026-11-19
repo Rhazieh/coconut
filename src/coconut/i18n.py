@@ -1,4 +1,4 @@
-"""Lightweight English / Spanish UI localization for Velum."""
+"""Lightweight English / Spanish UI localization for Coconut."""
 
 from __future__ import annotations
 
@@ -116,14 +116,14 @@ STRINGS: dict[str, dict[str, str]] = {
         "sc_prev_file": "Previous open file",
         "sc_close_file": "Close current file",
         "sc_open_settings": "Open settings",
-        "sc_quit": "Quit Velum",
+        "sc_quit": "Quit Coconut",
         "about_tagline": "Minimalist, local-first, eye-comfort Markdown viewer for Linux (Wayland & X11).",
         "about_credits_title": "Credits & Open Source Licenses",
         "about_author": "Created by Maximiliano Cano (Rhazieh) — MIT License.",
         "about_font": "Typography: Atkinson Hyperlegible Next (Braille Institute) — SIL OFL 1.1.",
         "about_engine": "Rendering: libcmark-gfm / python-markdown + PyQt6 QtWebEngine.",
         "about_contribute_title": "How to contribute",
-        "about_contribute_body": "Velum stays viewer-only, offline, and distraction-free. You can report bugs, suggest ergonomic improvements, or open pull requests on GitHub.",
+        "about_contribute_body": "Coconut stays viewer-only, offline, and distraction-free. You can report bugs, suggest ergonomic improvements, or open pull requests on GitHub.",
         "btn_github_repo": "GitHub Repository",
         "btn_report_issue": "Report Issue",
         "btn_contribute": "Contributing Guide",
@@ -236,14 +236,14 @@ STRINGS: dict[str, dict[str, str]] = {
         "sc_prev_file": "Archivo abierto anterior",
         "sc_close_file": "Cerrar archivo actual",
         "sc_open_settings": "Abrir ajustes",
-        "sc_quit": "Salir de Velum",
+        "sc_quit": "Salir de Coconut",
         "about_tagline": "Visor de Markdown minimalista, local y cómodo para la vista en Linux (Wayland y X11).",
         "about_credits_title": "Créditos y licencias Open Source",
         "about_author": "Creado por Maximiliano Cano (Rhazieh) — Licencia MIT.",
         "about_font": "Tipografía: Atkinson Hyperlegible Next (Braille Institute) — SIL OFL 1.1.",
         "about_engine": "Motor: libcmark-gfm / python-markdown + PyQt6 QtWebEngine.",
         "about_contribute_title": "Cómo aportar al proyecto",
-        "about_contribute_body": "Velum busca mantenerse simple, offline y sin distracciones. Podés reportar bugs, proponer mejoras ergonómicas o enviar PRs en GitHub.",
+        "about_contribute_body": "Coconut busca mantenerse simple, offline y sin distracciones. Podés reportar bugs, proponer mejoras ergonómicas o enviar PRs en GitHub.",
         "btn_github_repo": "Repositorio en GitHub",
         "btn_report_issue": "Reportar error",
         "btn_contribute": "Guía para colaborar",

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self' file:; script-src 'self' qrc:; style-src 'self' 'unsafe-inline' file:; font-src 'self' file: data:; img-src 'self' file: data: https: http:; object-src 'none'; frame-src 'none';">
-  <title>Velum</title>
+  <title>Coconut</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,7 +14,7 @@
     <aside id="toc-sidebar" class="sidebar-hidden" aria-label="Outline">
       <div id="toc-section" class="hidden">
         <div id="toc-header">
-          <span id="toc-doc-title">Velum</span>
+          <span id="toc-doc-title">Coconut</span>
         </div>
         <nav id="toc-list"></nav>
       </div>
@@ -42,12 +42,14 @@
       <section id="welcome" class="hidden" aria-label="Welcome">
         <div class="welcome-card">
           <div class="welcome-mark" aria-hidden="true">
-            <svg width="32" height="32" viewBox="0 0 128 128" fill="none">
-              <path d="M 26 26 H 44 C 46 26 47.4 27 48.2 28.6 L 64 60 V 96 C 64 96 62.2 95.6 61.3 94 L 24 30 C 23 28.2 24.2 26 26 26 Z" fill="#EAE5DC"/>
-              <path d="M 64 60 L 79.8 28.6 C 80.6 27 82 26 84 26 H 102 C 103.8 26 105 28.2 104 30 L 66.7 94 C 65.8 95.6 64 96 64 96 Z" fill="#D4A373"/>
+            <svg width="34" height="34" viewBox="0 0 128 128" fill="none">
+              <circle cx="60.5" cy="67.5" r="40" fill="#6B4222"/>
+              <circle cx="66.5" cy="60.5" r="38" fill="#D4A373"/>
+              <circle cx="66.5" cy="60.5" r="31" fill="#EFEAE1"/>
+              <circle cx="66.5" cy="60.5" r="19" fill="#191817"/>
             </svg>
           </div>
-          <h1>Velum</h1>
+          <h1>Coconut</h1>
           <p id="welcome-sub" class="welcome-sub">Drop <code>.md</code> files here or open them from disk.</p>
           <button id="btn-welcome-open" type="button" class="primary-btn">Open files…</button>
           <div id="recent-block" class="hidden">
@@ -165,7 +167,7 @@
             <div>
               <div id="sec-interface-lang" class="group-label">Interface language</div>
             </div>
-            <select id="set-language" class="velum-select">
+            <select id="set-language" class="coco-select">
               <option id="opt-lang-auto" value="auto">Automatic (System)</option>
               <option id="opt-lang-en" value="en">English</option>
               <option id="opt-lang-es" value="es">Español</option>
@@ -255,12 +257,12 @@
             <div class="translate-pair-grid">
               <label class="select-field">
                 <span id="lbl-translate-source">From</span>
-                <select id="set-tr-source" class="velum-select"></select>
+                <select id="set-tr-source" class="coco-select"></select>
               </label>
               <button id="btn-tr-swap" type="button" class="pill-btn swap-btn" title="Swap languages" aria-label="Swap languages">⇄</button>
               <label class="select-field">
                 <span id="lbl-translate-target">To</span>
-                <select id="set-tr-target" class="velum-select"></select>
+                <select id="set-tr-target" class="coco-select"></select>
               </label>
             </div>
           </div>
@@ -285,14 +287,16 @@
             <div class="about-icon" aria-hidden="true">
               <svg width="42" height="42" viewBox="0 0 128 128" fill="none">
                 <rect x="8" y="8" width="112" height="112" rx="28" fill="#1D1C1A" stroke="#35322E" stroke-width="2"/>
-                <path d="M 30.6 34.0 H 45.0 C 46.6 34.0 47.8 34.8 48.5 36.2 L 64.0 66.0 V 96.0 C 64.0 96.0 62.5 95.8 61.7 94.5 L 28.8 37.4 C 27.9 35.8 28.9 34.0 30.6 34.0 Z" fill="#EFEAE1"/>
-                <path d="M 64.0 66.0 L 79.5 36.2 C 80.2 34.8 81.4 34.0 83.0 34.0 H 97.4 C 99.1 34.0 100.1 35.8 99.2 37.4 L 66.3 94.5 C 65.5 95.8 64.0 96.0 64.0 96.0 Z" fill="#E3B581"/>
+                <circle cx="60.5" cy="67.5" r="34.5" fill="#6B4222"/>
+                <circle cx="66.5" cy="60.5" r="32.5" fill="#D4A373"/>
+                <circle cx="66.5" cy="60.5" r="26.5" fill="#EFEAE1"/>
+                <circle cx="66.5" cy="60.5" r="16.2" fill="#191817"/>
               </svg>
             </div>
             <div>
               <div class="about-title-row">
-                <strong>Velum</strong>
-                <span class="version-pill">v1.1.0</span>
+                <strong>Coconut</strong>
+                <span class="version-pill">v1.2.0</span>
               </div>
               <p id="about-tagline" class="about-sub">Minimalist, local-first, eye-comfort Markdown viewer for Linux (Wayland &amp; X11).</p>
             </div>
@@ -309,7 +313,7 @@
 
           <div class="about-card">
             <div id="about-contribute-title" class="group-label">How to contribute</div>
-            <p id="about-contribute-body" class="about-copy">Velum stays viewer-only, offline, and distraction-free. You can report bugs, suggest ergonomic improvements, or open pull requests on GitHub.</p>
+            <p id="about-contribute-body" class="about-copy">Coconut stays viewer-only, offline, and distraction-free. You can report bugs, suggest ergonomic improvements, or open pull requests on GitHub.</p>
             <div class="about-links">
               <button id="lnk-repo" type="button" class="pill-btn">GitHub Repository</button>
               <button id="lnk-issues" type="button" class="pill-btn">Report Issue</button>

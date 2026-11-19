@@ -1,6 +1,6 @@
 ---
 name: Bug report / Reporte de error
-about: Report an unexpected issue in Velum / Reportar un error en Velum
+about: Report an unexpected issue in Coconut / Reportar un error en Coconut
 title: "[Bug]: "
 labels: bug
 ---
@@ -12,7 +12,7 @@ A clear description of what happened.
 - Distro: (e.g. Debian 13, Fedora 41, Arch Linux)
 - Desktop / WM: (e.g. KDE Plasma 6, GNOME, Hyprland)
 - Session type: (`echo $XDG_SESSION_TYPE` — Wayland or X11)
-- Velum version: (`velum --version`)
+- Coconut version: (`coco --version`)
 
 **Steps to reproduce / Pasos para reproducir**
 1. Open `...`

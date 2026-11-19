@@ -1,16 +1,16 @@
 [Desktop Entry]
 Type=Application
-Name=Velum
+Name=Coconut
 GenericName=Markdown Viewer
 GenericName[es]=Visor de Markdown
 Comment=Minimalist, local-first, eye-comfort Markdown viewer
 Comment[es]=Visor minimalista y local de Markdown cómodo para la vista
 Exec=@BIN_PATH@ %U
-Icon=velum
+Icon=coconut
 Terminal=false
 Categories=Office;Viewer;Utility;
 MimeType=text/markdown;text/x-markdown;
-StartupWMClass=velum
+StartupWMClass=coconut
 StartupNotify=true
-Keywords=markdown;md;viewer;reader;documentation;
-Keywords[es]=markdown;md;visor;lector;documentación;
+Keywords=markdown;md;viewer;reader;documentation;coconut;coco;
+Keywords[es]=markdown;md;visor;lector;documentación;coconut;coco;

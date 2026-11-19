@@ -1,4 +1,4 @@
-"""Fast, safe GitHub-Flavored Markdown renderer for Velum."""
+"""Fast, safe GitHub-Flavored Markdown renderer for Coconut."""
 
 from __future__ import annotations
 
@@ -429,7 +429,7 @@ def render_markdown_text(text: str, base_dir: Path | None = None, filename: str 
     processor.feed(raw_html)
     processor.close()
 
-    fallback_title = Path(filename).stem if filename else "Velum"
+    fallback_title = Path(filename).stem if filename else "Coconut"
     title = processor.first_h1 or fallback_title
     return {
         "title": title,
