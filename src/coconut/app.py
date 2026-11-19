@@ -41,6 +41,7 @@ def _resolve_icon_path() -> Path | None:
     data_dir = Path(xdg_data).expanduser() if xdg_data else Path.home() / ".local" / "share"
     candidates = [
         data_dir / "icons" / "hicolor" / "scalable" / "apps" / "coconut.svg",
+        Path("/usr/share/icons/hicolor/scalable/apps/coconut.svg"),
         APP_DIR.parent.parent / "assets" / "icons" / "coconut.svg",
     ]
     for candidate in candidates:
@@ -1095,6 +1096,8 @@ def create_qt_runtime() -> dict[str, Any]:
           const hasFullscreenBtn = Boolean(document.getElementById('btn-fullscreen'));
           const hasFilesSection = Boolean(document.getElementById('files-section'));
           const hasSettingsModal = Boolean(document.getElementById('settings-modal'));
+          const hasExtensionsBtn = Boolean(document.getElementById('extensions-pill'));
+          const hasExtensionsModal = Boolean(document.getElementById('extensions-modal'));
           return {
             fontLoaded,
             bodyFont,
@@ -1108,7 +1111,9 @@ def create_qt_runtime() -> dict[str, Any]:
             hasSettingsBtn,
             hasFullscreenBtn,
             hasFilesSection,
-            hasSettingsModal
+            hasSettingsModal,
+            hasExtensionsBtn,
+            hasExtensionsModal
           };
         })();
         """
@@ -1131,6 +1136,8 @@ def create_qt_runtime() -> dict[str, Any]:
                 print(f"HAS_FULLSCREEN_BTN={res.get('hasFullscreenBtn')}")
                 print(f"HAS_FILES_SECTION={res.get('hasFilesSection')}")
                 print(f"HAS_SETTINGS_MODAL={res.get('hasSettingsModal')}")
+                print(f"HAS_EXTENSIONS_BTN={res.get('hasExtensionsBtn')}")
+                print(f"HAS_EXTENSIONS_MODAL={res.get('hasExtensionsModal')}")
                 print(f"JS_ERRORS={js_errs}")
                 for err in win.page.js_errors:
                     print(f"JS_ERROR_DETAIL={err}")
@@ -1146,6 +1153,8 @@ def create_qt_runtime() -> dict[str, Any]:
                     and bool(res.get("hasFullscreenBtn"))
                     and bool(res.get("hasFilesSection"))
                     and bool(res.get("hasSettingsModal"))
+                    and bool(res.get("hasExtensionsBtn"))
+                    and bool(res.get("hasExtensionsModal"))
                     and js_errs == 0
                 )
                 finish(0 if ok else 1)

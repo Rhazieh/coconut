@@ -55,7 +55,7 @@ Like a real coconut—**warm dark roasted shell on the outside (`#191817`), soft
 - **Optimal Measure & Scaling:** Adaptive `68ch` line width (`~65–72` characters per line at any size), `1.72` line height, and persistent `12–36 px` text sizing (`Ctrl++` / `Ctrl+-` / `Ctrl+Wheel`).
 - **Zero Chrome Clutter & Multi-File Sidebar:** No menus, no toolbars, no split editor—just a collapsible left sidebar combining the scrollspy **Outline** (auto-hidden on short docs), **collapsible folder groups** for all open `.md` files (persisted across restarts like a notepad until manually closed), and a subtle bottom-left **Settings** gear (`Ctrl+,`).
 - **Right-Click Google Translate:** Select any word or passage while reading, right-click, and open it pre-filled in Google Translate using your configured language pair (`Auto → ES`, `EN → ES`, `ES → EN`, or 27 common languages—strictly on-click, zero background network calls).
-- **Fullscreen & Customizable Shortcuts:** Dedicated top-right fullscreen button (`F11`) plus a live shortcut editor inside Settings.
+- **Fullscreen, Extensions & Customizable Shortcuts:** Dedicated top-right fullscreen button (`F11`), live shortcut editor in Settings, and a symmetrical top-left **Extensions** pill preparing Coconut for optional, lightweight text-only language modules (`.txt`, `.epub`, `.js`, `.ts`, `.java`, `.html`, etc.) installed on demand without compiler/IDE bloat.
 
 ---
 
@@ -88,7 +88,15 @@ Install PyQt6 WebEngine and the C `libcmark-gfm` library (or `python3-markdown` 
   sudo pacman -S python-pyqt6 python-pyqt6-webengine cmark-gfm
   ```
 
-### 2. Install Coconut (user-local, no `sudo` required)
+### 2. Install Coconut
+
+**Option A — Debian / Ubuntu `.deb` package (from [Releases](https://github.com/Rhazieh/coconut/releases)):**
+
+```bash
+sudo apt install ./coconut_1.3.0_all.deb
+```
+
+**Option B — User-local install from source (no `sudo` required):**
 
 ```bash
 git clone https://github.com/Rhazieh/coconut.git
@@ -101,6 +109,8 @@ This installs the `coco` command (plus `coconut` alias) and sets Coconut as the 
 ```bash
 ./install.sh --no-default
 ```
+
+Package maintainers can also build a `.deb` locally via `./packaging/build-deb.sh` or use `packaging/aur/PKGBUILD` on Arch Linux.
 
 ### Uninstall
 
@@ -148,9 +158,9 @@ coco --version            # print version
 
 ---
 
-## Part of a Local-First Linux Suite
+## Modular Extensions Roadmap
 
-Coconut is the first utility in a personal collection of small, open-source, offline Linux desktop tools built to replace bloated or cloud-tethered apps—with a minimalist EPUB reader on the roadmap next.
+Coconut stays strictly **viewer-only and lightweight** (never a heavy IDE or compiler host). Future updates will let you opt in to optional, text-focused extensions right from the **Extensions** button—such as calm syntax highlighting for `.js`, `.ts`, `.java`, `.html`, or plain-reading modules like `.txt` and `.epub`—installed individually with an **Add** button only when you actually need them.
 
 ---
 

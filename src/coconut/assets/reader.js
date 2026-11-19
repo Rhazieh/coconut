@@ -113,6 +113,12 @@
     btn_github_repo: "GitHub Repository",
     btn_report_issue: "Report Issue",
     btn_contribute: "Contributing Guide",
+    btn_extensions_label: "Extensions",
+    btn_extensions_title: "Extensions",
+    ext_modal_title: "Extensions",
+    ext_tab_languages: "Languages support",
+    ext_empty_title: "For future languages support",
+    ext_empty_desc: "Optional lightweight modules for .txt, .epub, .js, .ts, .java, .html and more will be installable on demand with an Add button—text-focused, zero compiler bloat.",
   };
 
   const state = {
@@ -163,6 +169,10 @@
   const btnFullscreen = document.getElementById("btn-fullscreen");
   const iconFsEnter = btnFullscreen.querySelector(".icon-enter");
   const iconFsExit = btnFullscreen.querySelector(".icon-exit");
+  const extensionsPill = document.getElementById("extensions-pill");
+  const btnExtensionsLabel = document.getElementById("btn-extensions-label");
+  const extensionsModal = document.getElementById("extensions-modal");
+  const btnExtClose = document.getElementById("btn-ext-close");
 
   const findBar = document.getElementById("find-bar");
   const findInput = document.getElementById("find-input");
@@ -355,6 +365,13 @@
     lnkRepo.textContent = uiStrings.btn_github_repo;
     lnkIssues.textContent = uiStrings.btn_report_issue;
     lnkContribute.textContent = uiStrings.btn_contribute;
+
+    btnExtensionsLabel.textContent = uiStrings.btn_extensions_label;
+    extensionsPill.title = uiStrings.btn_extensions_title;
+    setText("ext-modal-title", uiStrings.ext_modal_title);
+    setText("ext-tab-languages", uiStrings.ext_tab_languages);
+    setText("ext-empty-title", uiStrings.ext_empty_title);
+    setText("ext-empty-desc", uiStrings.ext_empty_desc);
 
     refreshThemeTooltip();
     refreshFullscreenButton();
@@ -825,6 +842,16 @@
     scrollEl.focus();
   }
 
+  function openExtensions() {
+    extensionsModal.classList.remove("hidden");
+  }
+
+  function closeExtensions() {
+    if (extensionsModal.classList.contains("hidden")) return;
+    extensionsModal.classList.add("hidden");
+    scrollEl.focus();
+  }
+
   function normalizeKeyEvent(e) {
     const modifiers = new Set(["Control", "Shift", "Alt", "Meta", "AltGraph"]);
     if (modifiers.has(e.key)) return null;
@@ -970,6 +997,11 @@
   });
   btnSettings.addEventListener("click", () => {
     openSettings("reading");
+  });
+  extensionsPill.addEventListener("click", openExtensions);
+  btnExtClose.addEventListener("click", closeExtensions);
+  extensionsModal.addEventListener("click", (e) => {
+    if (e.target === extensionsModal) closeExtensions();
   });
 
   // Settings modal wiring
@@ -1130,6 +1162,11 @@
   window.addEventListener("keydown", (e) => {
     if (recordingAction) return;
     if (e.key === "Escape") {
+      if (!extensionsModal.classList.contains("hidden")) {
+        e.preventDefault();
+        closeExtensions();
+        return;
+      }
       if (!settingsModal.classList.contains("hidden")) {
         e.preventDefault();
         closeSettings();
@@ -1141,7 +1178,7 @@
         return;
       }
     }
-    if (!settingsModal.classList.contains("hidden")) return;
+    if (!extensionsModal.classList.contains("hidden") || !settingsModal.classList.contains("hidden")) return;
     if (document.activeElement === findInput) return;
     if (e.ctrlKey || e.altKey || e.metaKey) return;
 
@@ -1181,6 +1218,8 @@
     setFullscreenState,
     openSettings,
     closeSettings,
+    openExtensions,
+    closeExtensions,
     renderDocument,
     showWelcome,
     openFindBar,

@@ -1,47 +1,35 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
   <defs>
-    <linearGradient id="coco-bg" x1="64" y1="8" x2="64" y2="120" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#252321"/>
-      <stop offset="100%" stop-color="#161514"/>
+    <linearGradient id="coco-husk" x1="16" y1="26" x2="104" y2="118" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#87542C"/>
+      <stop offset="100%" stop-color="#472A14"/>
     </linearGradient>
-    <linearGradient id="coco-rim" x1="64" y1="9" x2="64" y2="54" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.11"/>
-      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.00"/>
+    <linearGradient id="coco-shell-edge" x1="28" y1="14" x2="108" y2="102" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#E6B682"/>
+      <stop offset="100%" stop-color="#AE7038"/>
     </linearGradient>
-    <linearGradient id="coco-husk" x1="34" y1="38" x2="90" y2="98" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#7B4E2A"/>
-      <stop offset="100%" stop-color="#4A2D17"/>
+    <linearGradient id="coco-flesh" x1="34" y1="22" x2="102" y2="94" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F7F2E8"/>
+      <stop offset="100%" stop-color="#DDD4C3"/>
     </linearGradient>
-    <linearGradient id="coco-shell-edge" x1="40" y1="32" x2="92" y2="88" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#DFAC77"/>
-      <stop offset="100%" stop-color="#A86D38"/>
-    </linearGradient>
-    <linearGradient id="coco-flesh" x1="44" y1="38" x2="88" y2="84" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#F5F0E6"/>
-      <stop offset="100%" stop-color="#DDD4C5"/>
-    </linearGradient>
-    <linearGradient id="coco-hollow" x1="54" y1="48" x2="78" y2="76" gradientUnits="userSpaceOnUse">
+    <linearGradient id="coco-hollow" x1="50" y1="40" x2="88" y2="80" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#171513"/>
-      <stop offset="100%" stop-color="#262320"/>
+      <stop offset="100%" stop-color="#292522"/>
     </linearGradient>
   </defs>
 
-  <!-- Squircle container -->
-  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#coco-bg)" stroke="#35322E" stroke-width="1.5"/>
-  <rect x="9.25" y="9.25" width="109.5" height="109.5" rx="26.75" stroke="url(#coco-rim)" stroke-width="1"/>
+  <!-- Full-bleed tilted roasted dark coconut husk -->
+  <circle cx="57" cy="69" r="55" fill="url(#coco-husk)" stroke="#2F1B0C" stroke-width="1.5"/>
 
-  <!-- Outer 3D tilted dark husk -->
-  <circle cx="60.5" cy="67.5" r="34.5" fill="url(#coco-husk)"/>
-
-  <!-- Cut shell rim -->
-  <circle cx="66.5" cy="60.5" r="32.5" fill="url(#coco-shell-edge)"/>
+  <!-- Cut toasted-amber shell edge -->
+  <circle cx="68" cy="58" r="51" fill="url(#coco-shell-edge)"/>
 
   <!-- Warm cream coconut flesh -->
-  <circle cx="66.5" cy="60.5" r="26.5" fill="url(#coco-flesh)"/>
+  <circle cx="68" cy="58" r="41" fill="url(#coco-flesh)"/>
 
   <!-- Recessed warm-dark hollow -->
-  <circle cx="66.5" cy="60.5" r="16.2" fill="url(#coco-hollow)"/>
+  <circle cx="68" cy="58" r="23.5" fill="url(#coco-hollow)"/>
 
-  <!-- Delicate upper highlight arc along cream rim -->
-  <path d="M 49.5 47.0 A 21.5 21.5 0 0 1 78.0 42.5" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="1.6" stroke-linecap="round"/>
+  <!-- Crisp upper highlight arc along cream rim -->
+  <path d="M 44 37 A 32 32 0 0 1 85 32" stroke="#FFFFFF" stroke-opacity="0.38" stroke-width="2.4" stroke-linecap="round"/>
 </svg>

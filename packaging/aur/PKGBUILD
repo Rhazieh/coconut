@@ -1,0 +1,48 @@
+# Maintainer: Maximiliano Cano <maxi24cano@gmail.com>
+pkgname=coconut
+pkgver=1.3.0
+pkgrel=1
+pkgdesc="Minimalist, local-first, eye-comfort Markdown viewer for Linux (Wayland & X11)"
+arch=('any')
+url="https://github.com/Rhazieh/coconut"
+license=('MIT' 'OFL-1.1')
+depends=(
+  'python'
+  'python-pyqt6'
+  'python-pyqt6-webengine'
+  'cmark-gfm'
+)
+optdepends=(
+  'noto-fonts-emoji: Emoji rendering support'
+  'xdg-utils: Default file association integration'
+)
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/Rhazieh/coconut/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+  cd "${srcdir}/${pkgname}-${pkgver}"
+
+  install -d "${pkgdir}/usr/share/coconut"
+  cp -r src/coconut "${pkgdir}/usr/share/coconut/coconut"
+  find "${pkgdir}/usr/share/coconut/coconut" -type d -name "__pycache__" -exec rm -rf {} +
+
+  install -Dm644 assets/icons/coconut.svg "${pkgdir}/usr/share/icons/hicolor/scalable/apps/coconut.svg"
+
+  install -d "${pkgdir}/usr/share/fonts/TTF"
+  install -m644 src/coconut/fonts/*.ttf "${pkgdir}/usr/share/fonts/TTF/"
+
+  install -d "${pkgdir}/usr/bin"
+  cat >"${pkgdir}/usr/bin/coco" <<'EOF'
+#!/usr/bin/env bash
+exec /usr/bin/python3 /usr/share/coconut/coconut/app.py "$@"
+EOF
+  chmod 0755 "${pkgdir}/usr/bin/coco"
+  ln -s coco "${pkgdir}/usr/bin/coconut"
+
+  install -d "${pkgdir}/usr/share/applications"
+  sed "s|@BIN_PATH@|/usr/bin/coco|g" assets/coconut.desktop.in >"${pkgdir}/usr/share/applications/coconut.desktop"
+  chmod 0644 "${pkgdir}/usr/share/applications/coconut.desktop"
+
+  install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+  install -Dm644 THIRD_PARTY_LICENSES/OFL-1.1.txt "${pkgdir}/usr/share/licenses/${pkgname}/OFL-1.1.txt"
+}

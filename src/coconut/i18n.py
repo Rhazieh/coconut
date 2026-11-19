@@ -127,6 +127,12 @@ STRINGS: dict[str, dict[str, str]] = {
         "btn_github_repo": "GitHub Repository",
         "btn_report_issue": "Report Issue",
         "btn_contribute": "Contributing Guide",
+        "btn_extensions_label": "Extensions",
+        "btn_extensions_title": "Extensions",
+        "ext_modal_title": "Extensions",
+        "ext_tab_languages": "Languages support",
+        "ext_empty_title": "For future languages support",
+        "ext_empty_desc": "Optional lightweight modules for .txt, .epub, .js, .ts, .java, .html and more will be installable on demand with an Add button—text-focused, zero compiler bloat.",
     },
     "es": {
         "toc_label": "Índice",
@@ -247,6 +253,12 @@ STRINGS: dict[str, dict[str, str]] = {
         "btn_github_repo": "Repositorio en GitHub",
         "btn_report_issue": "Reportar error",
         "btn_contribute": "Guía para colaborar",
+        "btn_extensions_label": "Extensiones",
+        "btn_extensions_title": "Extensiones",
+        "ext_modal_title": "Extensiones",
+        "ext_tab_languages": "Soporte de lenguajes",
+        "ext_empty_title": "Para futuro soporte de lenguajes",
+        "ext_empty_desc": "Módulos livianos opcionales para .txt, .epub, .js, .ts, .java, .html y más se podrán instalar a pedido con un botón Add — solo texto, sin compiladores pesados.",
     },
 }
 

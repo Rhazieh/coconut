@@ -2,6 +2,16 @@
 
 All notable changes to **Coconut** (`coco`) are documented in this file.
 
+## [1.3.0] - 2026-11-19
+
+### Added
+- **Floating Extensions pill & modal:** Symmetrical rounded top-left button (`Extensions` / `Extensiones`) opening a clean modal with a **Languages support** section (*"For future languages support"*), laying the groundwork for optional text-only modules (`.txt`, `.epub`, `.js`, `.ts`, `.java`, `.html`, etc.) installable on demand without compiler/IDE bloat.
+- **Debian `.deb` & Arch `PKGBUILD` packaging:** Added `packaging/build-deb.sh` (`coconut_1.3.0_all.deb` published in GitHub Releases) and `packaging/aur/PKGBUILD`.
+- **GitHub Social Preview banner:** Added `docs/social-preview.png` (`1280x640`).
+
+### Changed
+- **Full-bleed Coconut SVG icon:** Scaled the tilted half-coconut emblem in `assets/icons/coconut.svg` to match standard taskbar icon proportions on KDE Plasma and GNOME.
+
 ## [1.2.0] - 2026-11-19
 
 ### Changed

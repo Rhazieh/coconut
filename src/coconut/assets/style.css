@@ -465,10 +465,17 @@ body {
   background: var(--accent-soft);
 }
 
-/* Main scroll container */
-#reader-scroll {
+/* Reader pane wrapper & scroll container */
+#reader-pane {
+  position: relative;
   flex: 1;
   min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+#reader-scroll {
+  width: 100%;
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
@@ -910,9 +917,39 @@ body {
   color: var(--text-strong);
 }
 
+/* Symmetrical top-left floating Extensions pill */
+#extensions-pill {
+  position: absolute;
+  top: 0.85rem;
+  left: 1.15rem;
+  z-index: 30;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0 0.82rem;
+  border-radius: 999px;
+  background: var(--pill-bg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 550;
+  opacity: 0.35;
+  cursor: pointer;
+  transition: opacity 160ms ease, color 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+#extensions-pill:hover,
+#extensions-pill:focus-visible {
+  opacity: 1;
+  color: var(--text-strong);
+  border-color: var(--accent);
+}
+
 /* Whisper-quiet floating controls pill */
 #controls {
-  position: fixed;
+  position: absolute;
   top: 0.85rem;
   right: 1.15rem;
   z-index: 30;
@@ -972,7 +1009,7 @@ body {
 
 /* Floating find bar */
 #find-bar {
-  position: fixed;
+  position: absolute;
   top: 3.35rem;
   right: 1.15rem;
   z-index: 35;
@@ -1586,6 +1623,46 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
+}
+
+/* Extensions modal empty state */
+.ext-empty-state {
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.65rem;
+  padding: 2rem 1.5rem;
+}
+
+.ext-empty-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.25rem;
+}
+
+.ext-empty-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--text-strong);
+}
+
+.ext-empty-desc {
+  margin: 0;
+  max-width: 440px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-muted);
 }
 
 @media (max-width: 600px) {
