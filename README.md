@@ -1,0 +1,156 @@
+<p align="center">
+  <img src="assets/icons/velum.svg" width="92" height="92" alt="Velum logo"/>
+</p>
+
+<h1 align="center">Velum</h1>
+
+<p align="center">
+  <strong>A fast, minimalist, local-first Markdown viewer engineered for hours of comfortable reading on Linux.</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Rhazieh/velum/actions/workflows/ci.yml"><img src="https://github.com/Rhazieh/velum/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-D4A373?style=flat-square" alt="MIT License"/></a>
+  <img src="https://img.shields.io/badge/Linux-Wayland%20%26%20X11-2E2C29?style=flat-square" alt="Wayland and X11"/>
+  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square" alt="Python 3.10+"/>
+  <img src="https://img.shields.io/badge/UI-PyQt6%20%2B%20QtWebEngine-41CD52?style=flat-square" alt="PyQt6"/>
+</p>
+
+<p align="center">
+  <strong>English</strong> &nbsp;|&nbsp; <a href="README.es.md">Español</a>
+</p>
+
+---
+
+## Why Velum?
+
+Most Markdown apps on Linux or the web are built as **editors first**—splitting your screen between raw `**syntax**` and preview, locking clean reading layouts behind subscriptions, refusing distraction-free fullscreen, or asking you to paste private local notes into third-party websites.
+
+I just wanted to double-click a `.md` file and **read it cleanly, fast, and completely offline**, without seeing raw code or sacrificing my eyes after hours of studying technical documentation.
+
+Velum was built to solve that exact friction through an **AI-assisted development workflow** paired with deliberate ergonomic research, low-halation color calibration, and native Freedesktop/Wayland integration.
+
+---
+
+## Screenshots
+
+| Warm Night (`warm-dark`, default) | Paper Sepia (`sepia`) |
+| :---: | :---: |
+| ![Velum Warm Night](docs/screenshots/velum-warm-dark.png) | ![Velum Paper Sepia](docs/screenshots/velum-sepia.png) |
+
+---
+
+## Ergonomic Design & Eye Comfort
+
+- **One Typeface Everywhere:** Entire UI and prose use [**Atkinson Hyperlegible Next**](https://github.com/googlefonts/atkinson-hyperlegible-next) (Braille Institute), bundled locally under SIL OFL 1.1. Distinct glyph forms (`1`/`l`/`I`, `0`/`O`), large x-height, and open apertures eliminate micro-decoding fatigue across prose, tables, file paths, and terminal commands (`Noto Color Emoji` handles emoji glyphs only).
+- **Anti-Halation Contrast Calibration:** Pure `#FFFFFF` on `#000000` (`21:1`) causes light scatter (*halation*) and eye strain. Velum defaults to **Warm Night** (`#DCD7CE` on `#191817`, `~12.4:1` WCAG AAA contrast) with warm amber accents (`#D4A373`) to avoid harsh blue-light glare.
+- **Three Instant Palettes (`Ctrl+T`):**
+
+  | Palette | Canvas | Body Text | Accent | Best For |
+  | :--- | :--- | :--- | :--- | :--- |
+  | **Warm Night** (`warm-dark`) | `#191817` | `#DCD7CE` | `#D4A373` | Night & dim rooms (default) |
+  | **Paper Sepia** (`sepia`) | `#F3ECDC` | `#352F28` | `#9A5B25` | Warm indoor lighting |
+  | **Soft Stone** (`soft-light`) | `#F4F3EE` | `#2A2926` | `#3E6B89` | Bright daylight |
+
+- **Optimal Measure & Scaling:** Adaptive `68ch` line width (`~65–72` characters per line at any size), `1.72` line height, and persistent `12–36 px` text sizing (`Ctrl++` / `Ctrl+-` / `Ctrl+Wheel`).
+- **Zero Chrome Clutter:** No menus, no toolbars, no split editor—just a collapsible outline sidebar with scrollspy (auto-hidden when a document has fewer than 2 headings), a subtle `2 px` reading progress hairline, and whisper-quiet floating controls.
+
+---
+
+## Linux Compatibility
+
+Velum targets **modern Linux desktops on both Wayland and X11** (Qt6 selects `wayland` or `xcb` automatically based on your session):
+
+- **Display Servers:** Native Wayland (`wayland-egl`) & X11 (`xcb`).
+- **Desktop Environments & WMs:** KDE Plasma 6/5, GNOME, Hyprland, Sway, XFCE, Cinnamon, LXQt, and any Freedesktop-compliant environment (`XDG_DATA_HOME`, `XDG_CONFIG_HOME`, `xdg-mime`).
+- **Interface Language:** Automatically matches English or Spanish from your system locale (override anytime via `"language": "en"` or `"es"` in `~/.config/velum/settings.json`).
+
+---
+
+## Installation
+
+### 1. System Dependencies
+
+Install PyQt6 WebEngine and the C `libcmark-gfm` library (or `python3-markdown` fallback):
+
+- **Debian / Ubuntu (Debian 12/13, Ubuntu 24.04+):**
+  ```bash
+  sudo apt install python3-pyqt6 python3-pyqt6.qtwebengine python3-pyqt6.qtwebchannel libcmark-gfm0 libcmark-gfm-extensions0
+  ```
+- **Fedora:**
+  ```bash
+  sudo dnf install python3-pyqt6 python3-pyqt6-webengine cmark-gfm-libs
+  ```
+- **Arch Linux:**
+  ```bash
+  sudo pacman -S python-pyqt6 python-pyqt6-webengine cmark-gfm
+  ```
+
+### 2. Install Velum (user-local, no `sudo` required)
+
+```bash
+git clone https://github.com/Rhazieh/velum.git
+cd velum
+./install.sh
+```
+
+To install without making Velum the default `.md` file handler:
+
+```bash
+./install.sh --no-default
+```
+
+### Uninstall
+
+```bash
+./uninstall.sh          # keeps ~/.config/velum/settings.json
+./uninstall.sh --purge  # removes settings too
+```
+
+---
+
+## Usage & Shortcuts
+
+Launch from your application menu, double-click any `.md` file in Dolphin/Files, drag a file onto the window, or run from terminal:
+
+```bash
+velum path/to/notes.md    # open a file (reuses running process via fast IPC)
+velum                     # open welcome screen with recent files
+velum --standalone f.md   # force a separate process
+velum --version           # print version
+```
+
+| Shortcut | Action |
+| :--- | :--- |
+| `Ctrl+O` | Open file picker |
+| `Ctrl++` / `Ctrl+-` / `Ctrl+0` | Increase / decrease / reset text size (`18 px`) |
+| `Ctrl + Wheel` | Smoothly scale text size |
+| `Ctrl+T` | Cycle color palette (`Warm Night` → `Paper Sepia` → `Soft Stone`) |
+| `Ctrl+B` | Toggle outline sidebar |
+| `Ctrl+F` | Find in document (`Enter` / `Shift+Enter`, `Esc` to close) |
+| `j` / `k` | Gentle vertical scroll |
+| `F11` | Fullscreen reading mode |
+| `Alt+←` / `Alt+→` (or Mouse Back/Forward) | Navigate between linked local `.md` files |
+| `Ctrl+R` / `F5` | Manual reload (also auto-reloads on disk edits) |
+| `Ctrl+W` / `Ctrl+Q` | Close window / quit |
+
+---
+
+## Architecture & Security
+
+- **Fast Rendering:** Calls system `libcmark-gfm` directly via Python `ctypes` (~11–13 ms for 5,000+ words) with automatic `python-markdown` fallback.
+- **Sanitized & Strict CSP:** Strips `<script>`, `<iframe>`, `<object>`, `<embed>`, event handlers (`on*`), and `javascript:` / unsafe `data:` URIs before injecting into the DOM; enforces a strict `Content-Security-Policy` with zero inline scripts.
+- **Zero-Flash Startup & Live Reload:** Applies background color on both `QMainWindow` and `QWebEnginePage` before loading the DOM, watches the active file via `QFileSystemWatcher` (handling atomic editor saves while preserving scroll position), and routes new launches through a per-user `QLocalServer` Unix socket.
+
+---
+
+## Part of a Local-First Linux Suite
+
+Velum is the first utility in a personal collection of small, open-source, offline Linux desktop tools built to replace bloated or cloud-tethered apps—with a minimalist EPUB reader on the roadmap next.
+
+---
+
+## License & Acknowledgments
+
+- **Code:** [MIT License](LICENSE) — Copyright © 2026 Maximiliano Cano (`Rhazieh`).
+- **Bundled Font:** [Atkinson Hyperlegible Next](https://github.com/googlefonts/atkinson-hyperlegible-next) licensed under the [SIL Open Font License 1.1](THIRD_PARTY_LICENSES/OFL-1.1.txt).

@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Markdown backends for testing
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-markdown libcmark-gfm0 libcmark-gfm-extensions0 || true
+          python3 -m pip install --quiet markdown || true
+
+      - name: Syntax check Python and shell scripts
+        run: |
+          python3 -m py_compile src/velum/*.py tests/*.py
+          bash -n install.sh uninstall.sh
+
+      - name: Run unit tests
+        run: python3 -m unittest discover -s tests -v
