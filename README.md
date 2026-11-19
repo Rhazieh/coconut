@@ -75,7 +75,7 @@ Install PyQt6 WebEngine and the C `libcmark-gfm` library (or `python3-markdown` 
 
 - **Debian / Ubuntu (Debian 12/13, Ubuntu 24.04+):**
   ```bash
-  sudo apt install python3-pyqt6 python3-pyqt6.qtwebengine python3-pyqt6.qtwebchannel libcmark-gfm0 libcmark-gfm-extensions0
+  sudo apt install python3-pyqt6 python3-pyqt6.qtwebengine python3-pyqt6.qtwebchannel cmark-gfm
   ```
 - **Fedora:**
   ```bash

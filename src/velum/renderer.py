@@ -66,6 +66,24 @@ _SAFE_IMAGE_DATA_RE = re.compile(
 )
 
 
+def _find_shared_lib(stem: str) -> str:
+    """Locate a shared library across Debian, Ubuntu, Fedora, and Arch layouts."""
+    found = ctypes.util.find_library(stem)
+    if found:
+        return found
+    for base in (
+        Path("/usr/lib/x86_64-linux-gnu"),
+        Path("/usr/lib/aarch64-linux-gnu"),
+        Path("/usr/lib64"),
+        Path("/usr/lib"),
+    ):
+        if base.is_dir():
+            matches = sorted(base.glob(f"lib{stem}.so*"))
+            if matches:
+                return str(matches[0])
+    return f"lib{stem}.so"
+
+
 def _init_cmark_gfm() -> bool:
     """Lazily initialize libcmark-gfm + extensions via ctypes."""
     global _CMARK_INIT_DONE, _CMARK, _LIBC
@@ -74,11 +92,8 @@ def _init_cmark_gfm() -> bool:
     _CMARK_INIT_DONE = True
 
     try:
-        cmark_name = ctypes.util.find_library("cmark-gfm") or "libcmark-gfm.so.0.29.0.gfm.13"
-        ext_name = (
-            ctypes.util.find_library("cmark-gfm-extensions")
-            or "libcmark-gfm-extensions.so.0.29.0.gfm.13"
-        )
+        cmark_name = _find_shared_lib("cmark-gfm")
+        ext_name = _find_shared_lib("cmark-gfm-extensions")
         cmark = ctypes.CDLL(cmark_name)
         ext = ctypes.CDLL(ext_name)
         libc = ctypes.CDLL(None)

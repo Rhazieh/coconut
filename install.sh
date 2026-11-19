@@ -50,7 +50,7 @@ Error: Missing PyQt6 WebEngine dependencies.
 
 Install them for your distribution:
   Debian / Ubuntu:
-    sudo apt install python3-pyqt6 python3-pyqt6.qtwebengine python3-pyqt6.qtwebchannel libcmark-gfm0 libcmark-gfm-extensions0
+    sudo apt install python3-pyqt6 python3-pyqt6.qtwebengine python3-pyqt6.qtwebchannel cmark-gfm
   Fedora:
     sudo dnf install python3-pyqt6 python3-pyqt6-webengine cmark-gfm-libs
   Arch Linux:

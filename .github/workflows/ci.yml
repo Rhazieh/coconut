@@ -21,8 +21,7 @@ jobs:
       - name: Install Markdown backends for testing
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-markdown libcmark-gfm0 libcmark-gfm-extensions0 || true
-          python3 -m pip install --quiet markdown || true
+          sudo apt-get install -y cmark-gfm python3-markdown
 
       - name: Syntax check Python and shell scripts
         run: |
