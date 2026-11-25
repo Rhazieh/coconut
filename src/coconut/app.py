@@ -1,4 +1,4 @@
-"""Coconut — Minimalist, local-first, eye-comfort Markdown viewer for Linux (Wayland & X11)."""
+"""Coconut — Minimalist, local-first, eye-comfort Markdown & code reader for Linux (Wayland & X11)."""
 
 from __future__ import annotations
 
@@ -16,26 +16,49 @@ if str(APP_DIR) not in sys.path:
 
 from __init__ import APP_NAME, __version__  # noqa: E402
 from config import (  # noqa: E402
+    CORE_MD_EXTENSIONS,
     DEFAULT_FONT_SIZE,
     DEFAULT_SHORTCUTS,
+    DEFAULT_SIDEBAR_WIDTH,
+    EXTENSION_BY_ID,
+    SUFFIX_TO_LANGUAGE,
     THEME_BG,
     TRANSLATE_SOURCE_CODES,
     TRANSLATE_TARGET_CODES,
+    VALID_ACCENT_COLORS,
+    VALID_CODE_STYLES,
+    VALID_EXTENSION_IDS,
     VALID_LANGUAGES,
+    VALID_LINE_HEIGHTS,
+    VALID_READING_WIDTHS,
     VALID_THEMES,
     add_recent_file,
+    build_file_dialog_filter,
     build_translate_url,
     clamp_font_size,
+    clamp_sidebar_width,
+    ensure_extensions_enabled_for_paths,
+    get_active_file_extensions,
+    get_extension_catalog,
+    is_file_supported,
+    is_known_supported_file,
     load_config,
+    normalize_extension_id,
     save_config,
+    scan_folder_tree,
 )
 from i18n import get_strings, get_translate_languages, resolve_language  # noqa: E402
-from renderer import render_markdown_file  # noqa: E402
+from renderer import (  # noqa: E402
+    render_code_text,
+    render_document_file,
+    render_markdown_text,
+    render_plain_text,
+)
 
 ASSETS_DIR = APP_DIR / "assets"
 FONTS_DIR = APP_DIR / "fonts"
 INDEX_HTML = (ASSETS_DIR / "index.html").resolve()
-MD_EXTENSIONS = {".md", ".markdown", ".mdown", ".mkd", ".mkdn", ".mdx", ".txt"}
+MD_EXTENSIONS = set(CORE_MD_EXTENSIONS) | {".txt"}
 
 
 def _resolve_icon_path() -> Path | None:
@@ -135,7 +158,7 @@ def configure_gpu_env(
 
 def _print_help() -> None:
     print(
-        f"{APP_NAME} {__version__} — Minimalist, eye-comfort Markdown viewer for Linux\n\n"
+        f"{APP_NAME} {__version__} — Minimalist, eye-comfort Markdown & code reader for Linux\n\n"
         "Usage:\n"
         "  coco [OPTIONS] [FILE...]\n\n"
         "Options:\n"
@@ -183,7 +206,8 @@ def create_qt_runtime() -> dict[str, Any]:
         for arg in args:
             if skip_next:
                 skip_next = False
-                continue
+                if not arg.startswith("-"):
+                    continue
             if arg == "--self-test":
                 skip_next = True
                 continue
@@ -196,9 +220,6 @@ def create_qt_runtime() -> dict[str, Any]:
             else:
                 result.append(str(Path(arg).expanduser().resolve()))
         return result
-
-    def is_markdown_or_text(path: Path) -> bool:
-        return path.suffix.lower() in MD_EXTENSIONS
 
     class ExternalLinkPage(QWebEnginePage):
         """Ephemeral page for target=_blank links so external URLs open in the browser."""
@@ -215,7 +236,7 @@ def create_qt_runtime() -> dict[str, Any]:
         ) -> bool:
             if url.isLocalFile():
                 target = Path(url.toLocalFile())
-                if is_markdown_or_text(target) and target.is_file():
+                if is_file_supported(target, self.win.controller.config) and target.is_file():
                     QTimer.singleShot(0, lambda p=target: self.win.open_file(p, push_history=True))
                 else:
                     QDesktopServices.openUrl(url)
@@ -225,7 +246,7 @@ def create_qt_runtime() -> dict[str, Any]:
             return False
 
     class ReaderPage(QWebEnginePage):
-        """Sandboxed page intercepting external links and local markdown navigation."""
+        """Sandboxed page intercepting external links and local document navigation."""
 
         def __init__(self, win: "ReaderWindow") -> None:
             super().__init__(win)
@@ -264,7 +285,7 @@ def create_qt_runtime() -> dict[str, Any]:
                     pass
                 if not is_main_frame:
                     return False
-                if is_markdown_or_text(local_path):
+                if is_file_supported(local_path, self.win.controller.config):
                     QTimer.singleShot(0, lambda p=local_path: self.win.open_file(p, push_history=True))
                 else:
                     QDesktopServices.openUrl(url)
@@ -319,6 +340,18 @@ def create_qt_runtime() -> dict[str, Any]:
             self.win.controller.set_setting_bool(key, value)
 
         @pyqtSlot(str, str)
+        def setSettingChoice(self, key: str, value: str) -> None:
+            self.win.controller.set_setting_choice(key, value)
+
+        @pyqtSlot(str, bool)
+        def toggleExtension(self, ext_id: str, enabled: bool) -> None:
+            self.win.controller.set_extension_enabled(ext_id, enabled)
+
+        @pyqtSlot(bool)
+        def setAllExtensions(self, enabled: bool) -> None:
+            self.win.controller.set_all_extensions(enabled)
+
+        @pyqtSlot(str, str)
         def setTranslatePair(self, source: str, target: str) -> None:
             self.win.controller.set_translate_pair(source, target)
 
@@ -350,6 +383,48 @@ def create_qt_runtime() -> dict[str, Any]:
         def openFileDialog(self) -> None:
             self.win.open_file_dialog()
 
+        @pyqtSlot()
+        def openFolderDialog(self) -> None:
+            self.win.open_folder_dialog()
+
+        @pyqtSlot(str)
+        def closeFolder(self, path: str) -> None:
+            if path:
+                self.win.controller.close_folder(Path(path))
+
+        @pyqtSlot(str)
+        def reorderOpenFiles(self, paths_json: str) -> None:
+            try:
+                items = json.loads(paths_json)
+                if isinstance(items, list):
+                    self.win.controller.reorder_open_files([str(p) for p in items if isinstance(p, str)])
+            except Exception:
+                pass
+
+        @pyqtSlot(str)
+        def reorderOpenFolders(self, folders_json: str) -> None:
+            try:
+                items = json.loads(folders_json)
+                if isinstance(items, list):
+                    self.win.controller.reorder_open_folders([str(p) for p in items if isinstance(p, str)])
+            except Exception:
+                pass
+
+        @pyqtSlot(str, str)
+        def reorderFolderChildren(self, folder_path: str, children_json: str) -> None:
+            try:
+                items = json.loads(children_json)
+                if folder_path and isinstance(items, list):
+                    self.win.controller.reorder_folder_children(
+                        folder_path, [str(p) for p in items if isinstance(p, str)]
+                    )
+            except Exception:
+                pass
+
+        @pyqtSlot(int)
+        def setSidebarWidth(self, width: int) -> None:
+            self.win.controller.set_sidebar_width(width)
+
         @pyqtSlot(str)
         def openRecentFile(self, path: str) -> None:
             if path:
@@ -369,6 +444,18 @@ def create_qt_runtime() -> dict[str, Any]:
         def toggleFolderCollapsed(self, folder: str) -> None:
             if folder:
                 self.win.controller.toggle_folder_collapsed(folder)
+
+        @pyqtSlot(bool, bool)
+        def setEditState(self, editing: bool, dirty: bool) -> None:
+            self.win.set_edit_state(editing, dirty)
+
+        @pyqtSlot(str, str)
+        def previewRawText(self, text: str, path_or_name: str) -> None:
+            self.win.preview_raw_text(text, path_or_name)
+
+        @pyqtSlot(str, str)
+        def saveFile(self, path: str, content: str) -> None:
+            self.win.save_file_content(path, content)
 
         @pyqtSlot(str)
         def copyText(self, text: str) -> None:
@@ -394,7 +481,7 @@ def create_qt_runtime() -> dict[str, Any]:
                 QDesktopServices.openUrl(parsed)
 
     class ReaderWindow(QMainWindow):
-        """Minimalist distraction-free Markdown reading window."""
+        """Minimalist distraction-free Markdown & code reading/editing window."""
 
         def __init__(self, controller: "AppController", initial_file: Path | None = None) -> None:
             super().__init__()
@@ -403,6 +490,9 @@ def create_qt_runtime() -> dict[str, Any]:
             self.pending_file: Path | None = initial_file
             self.web_ready = False
             self.has_toc = False
+            self.is_editing = False
+            self.is_dirty = False
+            self._ignore_next_watch = False
 
             self._history: list[Path] = []
             self._history_idx = -1
@@ -447,6 +537,10 @@ def create_qt_runtime() -> dict[str, Any]:
         def _shortcut_handlers(self) -> dict[str, Any]:
             return {
                 "open_file": self.open_file_dialog,
+                "open_folder": self.open_folder_dialog,
+                "new_file": self.start_new_document,
+                "toggle_edit": self.toggle_edit_mode,
+                "save_file": self.request_save,
                 "font_increase": lambda: self.controller.adjust_font_size(1),
                 "font_decrease": lambda: self.controller.adjust_font_size(-1),
                 "font_reset": lambda: self.controller.set_font_size(DEFAULT_FONT_SIZE),
@@ -508,6 +602,103 @@ def create_qt_runtime() -> dict[str, Any]:
             self.setStyleSheet(f"QMainWindow {{ background-color: {bg}; }}")
             self.page.setBackgroundColor(QColor(bg))
 
+        def _update_window_title(self) -> None:
+            prefix = "● " if self.is_dirty else ""
+            if self.current_file is not None:
+                self.setWindowTitle(f"{prefix}{self.current_file.name} — {APP_NAME}")
+            elif self.is_editing or self.is_dirty:
+                untitled = self.controller.strings.get("untitled_filename", "Untitled.md")
+                self.setWindowTitle(f"{prefix}{untitled} — {APP_NAME}")
+            else:
+                self.setWindowTitle(APP_NAME)
+
+        def set_edit_state(self, editing: bool, dirty: bool) -> None:
+            self.is_editing = bool(editing)
+            self.is_dirty = bool(dirty)
+            self._update_window_title()
+
+        def toggle_edit_mode(self) -> None:
+            self._run_js("window.Coconut && window.Coconut.toggleEditMode();")
+
+        def start_new_document(self) -> None:
+            self.current_file = None
+            self.is_editing = True
+            self.is_dirty = False
+            self._update_window_title()
+            self._run_js("window.Coconut && window.Coconut.startNewDocument();")
+
+        def request_save(self) -> None:
+            self._run_js("window.Coconut && window.Coconut.requestSave();")
+
+        def preview_raw_text(self, text: str, path_or_name: str) -> None:
+            p = Path(path_or_name) if path_or_name else Path("Untitled.md")
+            suffix = p.suffix.lower()
+            base_dir = p.parent if p.is_absolute() and p.parent.is_dir() else None
+            if suffix in CORE_MD_EXTENSIONS or not suffix:
+                doc = render_markdown_text(text, base_dir=base_dir, filename=p.name)
+            elif suffix in (".txt", ".text", ".log"):
+                doc = render_plain_text(text, filename=p.name)
+            elif suffix in SUFFIX_TO_LANGUAGE:
+                doc = render_code_text(text, filename=p.name)
+            else:
+                doc = render_markdown_text(text, base_dir=base_dir, filename=p.name)
+            doc["path"] = str(self.current_file) if self.current_file else ""
+            self.has_toc = len(doc.get("toc", [])) >= 2
+            doc_json = json.dumps(doc, ensure_ascii=False)
+            self._run_js(f"window.Coconut && window.Coconut.renderDocument({doc_json}, true, true);")
+
+        def save_file_content(self, path_str: str, content: str) -> None:
+            target: Path | None = None
+            if path_str:
+                target = Path(path_str).expanduser().resolve()
+            elif self.current_file is not None:
+                target = self.current_file
+            else:
+                docs_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation)
+                start_dir = Path(docs_dir) if docs_dir else Path.home()
+                default_name = self.controller.strings.get("untitled_filename", "Untitled.md")
+                s = self.controller.strings
+                chosen, _ = QFileDialog.getSaveFileName(
+                    self,
+                    s["dialog_save_title"],
+                    str(start_dir / default_name),
+                    build_file_dialog_filter(self.controller.config, self.controller.lang),
+                )
+                if not chosen:
+                    return
+                target = Path(chosen).expanduser().resolve()
+
+            try:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                self._ignore_next_watch = True
+                target.write_text(content, encoding="utf-8")
+            except Exception as exc:
+                self._ignore_next_watch = False
+                msg = self.controller.strings["toast_save_error"].format(err=str(exc))
+                self._run_js(f"window.Coconut && window.Coconut.showToast({json.dumps(msg)});")
+                return
+
+            self.current_file = target
+            self.is_dirty = False
+            self.controller.register_open_file(target)
+            self._watch_file(target)
+            self.controller.record_recent_file(str(target))
+            self.push_session_to_web()
+
+            try:
+                doc = render_document_file(target)
+            except Exception as exc:
+                msg = self.controller.strings["toast_open_error"].format(err=str(exc))
+                self._run_js(f"window.Coconut && window.Coconut.showToast({json.dumps(msg)});")
+                return
+
+            self.has_toc = len(doc.get("toc", [])) >= 2
+            self._update_window_title()
+            doc_json = json.dumps(doc, ensure_ascii=False)
+            self._run_js(f"window.Coconut && window.Coconut.onFileSaved({doc_json});")
+            saved_msg = self.controller.strings["toast_saved"].format(name=target.name)
+            self._run_js(f"window.Coconut && window.Coconut.showToast({json.dumps(saved_msg)});")
+
         def push_strings_to_web(self) -> None:
             if not self.web_ready:
                 return
@@ -524,7 +715,17 @@ def create_qt_runtime() -> dict[str, Any]:
                 "font_size": cfg["font_size"],
                 "theme": cfg["theme"],
                 "language": cfg["language"],
+                "reading_width": cfg.get("reading_width", "medium"),
+                "line_height": cfg.get("line_height", "comfortable"),
+                "show_line_numbers": cfg.get("show_line_numbers", True),
+                "accent_color": cfg.get("accent_color", "default"),
+                "code_style": cfg.get("code_style", "card"),
+                "enabled_extensions": cfg.get("enabled_extensions", []),
+                "extensions_catalog": get_extension_catalog(
+                    self.controller.lang, cfg.get("enabled_extensions", [])
+                ),
                 "sidebar_visible": cfg["sidebar_visible"],
+                "sidebar_width": cfg.get("sidebar_width", DEFAULT_SIDEBAR_WIDTH),
                 "show_progress_bar": cfg["show_progress_bar"],
                 "auto_reload": cfg["auto_reload"],
                 "restore_session": cfg["restore_session"],
@@ -532,7 +733,7 @@ def create_qt_runtime() -> dict[str, Any]:
                 "translate_source": cfg["translate_source"],
                 "translate_target": cfg["translate_target"],
                 "shortcuts": cfg["shortcuts"],
-            })
+            }, ensure_ascii=False)
             self._run_js(f"window.Coconut && window.Coconut.applySettings({payload});")
             if toast_msg:
                 self._run_js(f"window.Coconut && window.Coconut.showToast({json.dumps(toast_msg)});")
@@ -561,6 +762,8 @@ def create_qt_runtime() -> dict[str, Any]:
         def show_welcome(self) -> None:
             self.current_file = None
             self.has_toc = False
+            self.is_editing = False
+            self.is_dirty = False
             self.setWindowTitle(APP_NAME)
             recent_json = json.dumps(self.controller.config.get("recent_files", []))
             self._run_js(f"window.Coconut && window.Coconut.showWelcome({recent_json});")
@@ -584,9 +787,12 @@ def create_qt_runtime() -> dict[str, Any]:
                     self._history.append(resolved)
                     self._history_idx = len(self._history) - 1
 
+            self.controller.auto_enable_extensions_for_paths([resolved], notify=True)
             self.controller.register_open_file(resolved)
             self._watch_file(resolved)
             self.current_file = resolved
+            self.is_editing = False
+            self.is_dirty = False
             self._load_and_render(resolved, preserve_scroll=False)
             self.controller.record_recent_file(str(resolved))
             self.push_session_to_web()
@@ -594,6 +800,8 @@ def create_qt_runtime() -> dict[str, Any]:
         def close_current_file(self) -> None:
             if self.current_file is not None:
                 self.controller.close_file(self.current_file)
+            elif self.is_editing:
+                self.show_welcome()
             else:
                 self.close()
 
@@ -604,12 +812,24 @@ def create_qt_runtime() -> dict[str, Any]:
             self.watcher.addPath(str(path))
 
         def _on_file_changed(self, _changed_path: str) -> None:
+            if self._ignore_next_watch:
+                self._ignore_next_watch = False
+                if self.current_file and self.current_file.is_file():
+                    p_str = str(self.current_file)
+                    if p_str not in self.watcher.files():
+                        self.watcher.addPath(p_str)
+                return
             if not self.controller.config.get("auto_reload", True):
+                return
+            # Coordinate with Edit mode: pause auto-reload while editing or holding unsaved changes
+            if self.is_editing or self.is_dirty:
                 return
             self._reload_timer.start()
 
         def _reload_watched_file(self) -> None:
             if not self.controller.config.get("auto_reload", True):
+                return
+            if self.is_editing or self.is_dirty:
                 return
             if self.current_file is None or not self.current_file.is_file():
                 return
@@ -620,20 +840,22 @@ def create_qt_runtime() -> dict[str, Any]:
 
         def _load_and_render(self, path: Path, preserve_scroll: bool) -> None:
             try:
-                doc = render_markdown_file(path)
+                doc = render_document_file(path)
             except Exception as exc:
                 msg = self.controller.strings["toast_open_error"].format(err=str(exc))
                 self._run_js(f"window.Coconut && window.Coconut.showToast({json.dumps(msg)});")
                 return
 
             self.has_toc = len(doc.get("toc", [])) >= 2
-            self.setWindowTitle(f"{doc['filename']} — {APP_NAME}")
+            self._update_window_title()
             doc_json = json.dumps(doc, ensure_ascii=False)
             preserve_js = "true" if preserve_scroll else "false"
             self._run_js(f"window.Coconut && window.Coconut.renderDocument({doc_json}, {preserve_js});")
 
         def reload_current(self) -> None:
             if self.current_file is not None and self.current_file.is_file():
+                if self.is_editing:
+                    return
                 self._load_and_render(self.current_file, preserve_scroll=True)
                 msg = self.controller.strings["toast_reloaded"]
                 self._run_js(f"window.Coconut && window.Coconut.showToast({json.dumps(msg)});")
@@ -656,14 +878,31 @@ def create_qt_runtime() -> dict[str, Any]:
                 start_dir = docs_dir or str(Path.home())
 
             s = self.controller.strings
+            file_filter = build_file_dialog_filter(self.controller.config, self.controller.lang)
             chosen_list, _ = QFileDialog.getOpenFileNames(
                 self,
                 s["dialog_open_title"],
                 start_dir,
-                s["dialog_filter"],
+                file_filter,
             )
             if chosen_list:
                 self.controller.add_files_to_session([Path(p) for p in chosen_list], activate_first=True)
+
+        def open_folder_dialog(self) -> None:
+            if self.current_file is not None:
+                start_dir = str(self.current_file.parent)
+            else:
+                docs_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation)
+                start_dir = docs_dir or str(Path.home())
+
+            s = self.controller.strings
+            chosen_dir = QFileDialog.getExistingDirectory(
+                self,
+                s["dialog_open_folder_title"],
+                start_dir,
+            )
+            if chosen_dir:
+                self.controller.add_folder_to_session(Path(chosen_dir), activate_first=True)
 
         def open_find_bar(self) -> None:
             self._run_js("window.Coconut && window.Coconut.openFindBar();")
@@ -713,6 +952,24 @@ def create_qt_runtime() -> dict[str, Any]:
             act_open.triggered.connect(self.open_file_dialog)
             menu.addAction(act_open)
 
+            act_open_folder = QAction(_label("ctx_open_folder", "open_folder"), menu)
+            act_open_folder.triggered.connect(self.open_folder_dialog)
+            menu.addAction(act_open_folder)
+
+            act_new = QAction(_label("ctx_new_file", "new_file"), menu)
+            act_new.triggered.connect(self.start_new_document)
+            menu.addAction(act_new)
+
+            if self.current_file is None or self.current_file.suffix.lower() != ".epub":
+                act_edit = QAction(_label("ctx_edit", "toggle_edit"), menu)
+                act_edit.triggered.connect(self.toggle_edit_mode)
+                menu.addAction(act_edit)
+
+            if self.is_editing or self.is_dirty:
+                act_save = QAction(_label("ctx_save", "save_file"), menu)
+                act_save.triggered.connect(self.request_save)
+                menu.addAction(act_save)
+
             menu.addSeparator()
 
             act_inc = QAction(_label("ctx_inc", "font_increase"), menu)
@@ -761,14 +1018,21 @@ def create_qt_runtime() -> dict[str, Any]:
             for url in mime.urls():
                 if url.isLocalFile():
                     p = Path(url.toLocalFile())
-                    if p.is_file():
+                    if p.is_dir():
+                        paths.append(p)
+                    elif p.is_file() and is_known_supported_file(p):
                         paths.append(p)
             return paths
 
         def _handle_dropped_paths(self, paths: list[Path]) -> None:
             if not paths:
                 return
-            self.controller.add_files_to_session(paths, activate_first=True)
+            dirs = [p for p in paths if p.is_dir()]
+            files = [p for p in paths if p.is_file()]
+            for d in dirs:
+                self.controller.add_folder_to_session(d, activate_first=not files)
+            if files:
+                self.controller.add_files_to_session(files, activate_first=True)
 
         def dragEnterEvent(self, event: Any) -> None:
             if self._extract_dropped_paths(event.mimeData()):
@@ -823,7 +1087,7 @@ def create_qt_runtime() -> dict[str, Any]:
             super().closeEvent(event)
 
     class AppController(QObject):
-        """Coordinates settings, multi-file session, localization, IPC, and windows."""
+        """Coordinates settings, multi-file session, extensions, localization, IPC, and windows."""
 
         def __init__(self, ephemeral: bool = False) -> None:
             super().__init__()
@@ -836,6 +1100,8 @@ def create_qt_runtime() -> dict[str, Any]:
             self._ipc_buffers: dict[int, bytes] = {}
 
             self.open_files: list[Path] = []
+            self.open_folders: list[Path] = []
+            self.custom_file_order: dict[str, list[str]] = dict(self.config.get("custom_file_order", {}))
             self.active_file: Path | None = None
             self.collapsed_folders: set[str] = set(self.config.get("collapsed_folders", []))
 
@@ -844,10 +1110,14 @@ def create_qt_runtime() -> dict[str, Any]:
                     p = Path(raw_path).expanduser().resolve()
                     if p.is_file() and p not in self.open_files:
                         self.open_files.append(p)
+                for raw_dir in self.config.get("open_folders", []):
+                    d = Path(raw_dir).expanduser().resolve()
+                    if d.is_dir() and d not in self.open_folders:
+                        self.open_folders.append(d)
                 raw_active = self.config.get("active_file", "")
                 if raw_active:
                     cand = Path(raw_active).expanduser().resolve()
-                    if cand in self.open_files:
+                    if cand in self.open_files or (self.open_folders and cand.is_file()):
                         self.active_file = cand
                 if self.active_file is None and self.open_files:
                     self.active_file = self.open_files[0]
@@ -865,18 +1135,120 @@ def create_qt_runtime() -> dict[str, Any]:
                 return
             if self.config.get("restore_session", True):
                 self.config["open_files"] = [str(p) for p in self.open_files]
+                self.config["open_folders"] = [str(d) for d in self.open_folders]
                 self.config["active_file"] = str(self.active_file) if self.active_file else ""
             else:
                 self.config["open_files"] = []
+                self.config["open_folders"] = []
                 self.config["active_file"] = ""
+            self.config["custom_file_order"] = self.custom_file_order
             self.config["collapsed_folders"] = sorted(self.collapsed_folders)
 
         def session_payload(self) -> dict[str, Any]:
+            folder_trees: list[dict[str, Any]] = []
+            for d in self.open_folders:
+                if d.is_dir():
+                    tree, _ = scan_folder_tree(d, self.custom_file_order)
+                    folder_trees.append(tree)
             return {
                 "open_files": [str(p) for p in self.open_files],
+                "open_folders": [str(d) for d in self.open_folders if d.is_dir()],
+                "folder_trees": folder_trees,
                 "active_file": str(self.active_file) if self.active_file else "",
                 "collapsed_folders": sorted(self.collapsed_folders),
             }
+
+        def auto_enable_extensions_for_paths(self, paths: list[Path], notify: bool = True) -> list[str]:
+            newly = ensure_extensions_enabled_for_paths(self.config, list(paths))
+            if not newly:
+                return []
+            toast_msg: str | None = None
+            if notify:
+                names = [
+                    EXTENSION_BY_ID.get(eid, {}).get("name_es" if self.lang == "es" else "name_en", eid)
+                    for eid in newly
+                ]
+                toast_msg = self.strings.get("toast_ext_auto_enabled", "Auto-enabled: {names}").format(
+                    names=", ".join(names[:4]) + ("…" if len(names) > 4 else "")
+                )
+            self.broadcast_settings(toast_msg)
+            return newly
+
+        def add_folder_to_session(self, folder: Path, activate_first: bool = True) -> None:
+            resolved_dir = folder.expanduser().resolve()
+            if not resolved_dir.is_dir():
+                return
+            if resolved_dir not in self.open_folders:
+                self.open_folders.append(resolved_dir)
+            _tree, discovered_files = scan_folder_tree(resolved_dir, self.custom_file_order)
+            if discovered_files:
+                self.auto_enable_extensions_for_paths(discovered_files, notify=False)
+                if activate_first:
+                    target = discovered_files[0]
+                    self.active_file = target
+                    win = self._ensure_window(initial_file=target)
+                    if win.web_ready:
+                        win.open_file(target, push_history=True)
+                    else:
+                        win.pending_file = target
+                else:
+                    self._ensure_window(initial_file=self.active_file)
+                msg = self.strings.get("toast_folder_opened", "Opened folder: {name} ({count} files)").format(
+                    name=resolved_dir.name, count=len(discovered_files)
+                )
+            else:
+                self._ensure_window(initial_file=self.active_file)
+                msg = self.strings.get("toast_folder_empty", "No supported files in {name}").format(
+                    name=resolved_dir.name
+                )
+            self.broadcast_session()
+            for win in self.windows:
+                win.push_settings_to_web(msg)
+
+        def close_folder(self, folder: Path) -> None:
+            resolved_dir = folder.expanduser().resolve()
+            if resolved_dir in self.open_folders:
+                self.open_folders.remove(resolved_dir)
+                self.broadcast_session()
+
+        def reorder_open_files(self, ordered_paths: list[str]) -> None:
+            existing = {str(p): p for p in self.open_files}
+            new_list: list[Path] = []
+            seen: set[str] = set()
+            for raw in ordered_paths:
+                if raw in existing and raw not in seen:
+                    seen.add(raw)
+                    new_list.append(existing[raw])
+            for p in self.open_files:
+                if str(p) not in seen:
+                    new_list.append(p)
+            self.open_files = new_list
+            self.sync_session_to_config()
+            self.persist_config()
+
+        def reorder_open_folders(self, ordered_dirs: list[str]) -> None:
+            existing = {str(d): d for d in self.open_folders}
+            new_list: list[Path] = []
+            seen: set[str] = set()
+            for raw in ordered_dirs:
+                if raw in existing and raw not in seen:
+                    seen.add(raw)
+                    new_list.append(existing[raw])
+            for d in self.open_folders:
+                if str(d) not in seen:
+                    new_list.append(d)
+            self.open_folders = new_list
+            self.broadcast_session()
+
+        def reorder_folder_children(self, folder_path: str, ordered_children: list[str]) -> None:
+            if not folder_path:
+                return
+            self.custom_file_order[folder_path] = list(ordered_children)
+            self.broadcast_session()
+
+        def set_sidebar_width(self, width: int) -> None:
+            self.config["sidebar_width"] = clamp_sidebar_width(width)
+            self.persist_config()
 
         def broadcast_session(self) -> None:
             self.sync_session_to_config()
@@ -907,6 +1279,7 @@ def create_qt_runtime() -> dict[str, Any]:
                     added.append(resolved)
             if not added:
                 return
+            self.auto_enable_extensions_for_paths(added, notify=True)
             target = added[0] if activate_first else (self.active_file or added[0])
             self.active_file = target
             win = self._ensure_window(initial_file=target)
@@ -1000,6 +1373,7 @@ def create_qt_runtime() -> dict[str, Any]:
             allowed = {
                 "sidebar_visible",
                 "show_progress_bar",
+                "show_line_numbers",
                 "auto_reload",
                 "restore_session",
                 "translate_enabled",
@@ -1007,6 +1381,41 @@ def create_qt_runtime() -> dict[str, Any]:
             if key not in allowed:
                 return
             self.config[key] = bool(value)
+            self.broadcast_settings()
+
+        def set_setting_choice(self, key: str, value: str) -> None:
+            validators: dict[str, tuple[str, ...]] = {
+                "reading_width": VALID_READING_WIDTHS,
+                "line_height": VALID_LINE_HEIGHTS,
+                "accent_color": VALID_ACCENT_COLORS,
+                "code_style": VALID_CODE_STYLES,
+            }
+            valid_values = validators.get(key)
+            if not valid_values or value not in valid_values:
+                return
+            self.config[key] = value
+            self.broadcast_settings()
+
+        def set_extension_enabled(self, ext_id: str, enabled: bool) -> None:
+            norm = normalize_extension_id(ext_id)
+            if norm is None:
+                return
+            current = set(self.config.get("enabled_extensions", []))
+            if enabled:
+                current.add(norm)
+            else:
+                current.discard(norm)
+            self.config["enabled_extensions"] = [
+                eid for eid in VALID_EXTENSION_IDS if eid in current
+            ]
+            mod = EXTENSION_BY_ID.get(norm, {})
+            mod_name = mod.get("name_es" if self.lang == "es" else "name_en", norm)
+            toast_key = "toast_ext_added" if enabled else "toast_ext_removed"
+            toast_msg = self.strings.get(toast_key, "{name}").format(name=mod_name)
+            self.broadcast_settings(toast_msg)
+
+        def set_all_extensions(self, enabled: bool) -> None:
+            self.config["enabled_extensions"] = list(VALID_EXTENSION_IDS) if enabled else []
             self.broadcast_settings()
 
         def set_translate_pair(self, source: str, target: str) -> None:
@@ -1082,7 +1491,12 @@ def create_qt_runtime() -> dict[str, Any]:
                 return
 
             resolved_list = [Path(p).expanduser().resolve() for p in raw_paths]
-            self.add_files_to_session(resolved_list, activate_first=True)
+            dirs = [p for p in resolved_list if p.is_dir()]
+            files = [p for p in resolved_list if p.is_file()]
+            for d in dirs:
+                self.add_folder_to_session(d, activate_first=not files)
+            if files:
+                self.add_files_to_session(files, activate_first=True)
 
         def start_ipc_server(self, socket_name: str) -> None:
             QLocalServer.removeServer(socket_name)
@@ -1187,6 +1601,10 @@ def create_qt_runtime() -> dict[str, Any]:
           const hasSettingsModal = Boolean(document.getElementById('settings-modal'));
           const hasExtensionsBtn = Boolean(document.getElementById('extensions-pill'));
           const hasExtensionsModal = Boolean(document.getElementById('extensions-modal'));
+          const extCardsCount = document.querySelectorAll('#extensions-list .ext-card').length;
+          const hasEditBtn = Boolean(document.getElementById('btn-edit-mode'));
+          const hasEditorView = Boolean(document.getElementById('editor-view'));
+          const hasHighlightEngine = Boolean(window.CocoHighlight);
           return {
             fontLoaded,
             bodyFont,
@@ -1202,7 +1620,11 @@ def create_qt_runtime() -> dict[str, Any]:
             hasFilesSection,
             hasSettingsModal,
             hasExtensionsBtn,
-            hasExtensionsModal
+            hasExtensionsModal,
+            extCardsCount,
+            hasEditBtn,
+            hasEditorView,
+            hasHighlightEngine
           };
         })();
         """
@@ -1227,6 +1649,10 @@ def create_qt_runtime() -> dict[str, Any]:
                 print(f"HAS_SETTINGS_MODAL={res.get('hasSettingsModal')}")
                 print(f"HAS_EXTENSIONS_BTN={res.get('hasExtensionsBtn')}")
                 print(f"HAS_EXTENSIONS_MODAL={res.get('hasExtensionsModal')}")
+                print(f"EXT_CARDS_COUNT={res.get('extCardsCount')}")
+                print(f"HAS_EDIT_BTN={res.get('hasEditBtn')}")
+                print(f"HAS_EDITOR_VIEW={res.get('hasEditorView')}")
+                print(f"HAS_HIGHLIGHT_ENGINE={res.get('hasHighlightEngine')}")
                 print(f"JS_ERRORS={js_errs}")
                 for err in win.page.js_errors:
                     print(f"JS_ERROR_DETAIL={err}")
@@ -1244,6 +1670,10 @@ def create_qt_runtime() -> dict[str, Any]:
                     and bool(res.get("hasSettingsModal"))
                     and bool(res.get("hasExtensionsBtn"))
                     and bool(res.get("hasExtensionsModal"))
+                    and int(res.get("extCardsCount", 0)) >= 16
+                    and bool(res.get("hasEditBtn"))
+                    and bool(res.get("hasEditorView"))
+                    and bool(res.get("hasHighlightEngine"))
                     and js_errs == 0
                 )
                 finish(0 if ok else 1)
@@ -1289,12 +1719,29 @@ def main() -> int:
 
     standalone = "--standalone" in raw_argv
     self_test_path: Path | None = None
+    temp_self_test_file: Path | None = None
     if "--self-test" in raw_argv:
         idx = raw_argv.index("--self-test")
-        if idx + 1 >= len(raw_argv):
-            print("Usage: coco --self-test <file.md>", file=sys.stderr)
-            return 2
-        self_test_path = Path(raw_argv[idx + 1]).expanduser().resolve()
+        if idx + 1 < len(raw_argv) and not raw_argv[idx + 1].startswith("-"):
+            self_test_path = Path(raw_argv[idx + 1]).expanduser().resolve()
+        else:
+            import tempfile
+            fd, tmp_name = tempfile.mkstemp(prefix="coconut-selftest-", suffix=".md")
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                handle.write(
+                    "# Coconut Self-Test\n\n"
+                    "## Section One\n\n"
+                    "Reading and inline `code` check.\n\n"
+                    "```python\n"
+                    "def hello(name: str) -> str:\n"
+                    "    return f'Hello {name}'\n"
+                    "```\n\n"
+                    "## Section Two\n\n"
+                    "- [x] Extensions\n"
+                    "- [x] Editor\n"
+                )
+            temp_self_test_file = Path(tmp_name)
+            self_test_path = temp_self_test_file
         standalone = True
 
     paths = normalize_cli_paths(raw_argv)
@@ -1318,7 +1765,14 @@ def main() -> int:
     load_bundled_fonts(app)
 
     if self_test_path is not None:
-        return run_self_test(app, self_test_path)
+        try:
+            return run_self_test(app, self_test_path)
+        finally:
+            if temp_self_test_file is not None:
+                try:
+                    temp_self_test_file.unlink(missing_ok=True)
+                except OSError:
+                    pass
 
     controller = AppController(ephemeral=False)
     if not standalone:
