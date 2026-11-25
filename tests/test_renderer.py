@@ -1,10 +1,12 @@
-"""Unit tests for Coconut's Markdown renderer and HTML sanitizer."""
+"""Unit tests for Coconut's Markdown, Code, Plain-Text, and EPUB renderers."""
 
 from __future__ import annotations
 
+import base64
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 from unittest import mock
 
@@ -15,6 +17,81 @@ if str(SRC_DIR) not in sys.path:
 import renderer  # noqa: E402
 
 
+def _build_sample_epub(epub_path: Path) -> None:
+    """Create a valid minimal EPUB archive with container.xml, OPF, NCX, 2 chapters, and an image."""
+    tiny_png = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    )
+    container_xml = """<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>
+"""
+    content_opf = """<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="BookId" version="2.0">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>Coconut Field Guide</dc:title>
+    <dc:creator>Maximiliano Cano</dc:creator>
+    <dc:language>en</dc:language>
+  </metadata>
+  <manifest>
+    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+    <item id="ch1" href="text/ch1.xhtml" media-type="application/xhtml+xml"/>
+    <item id="ch2" href="text/ch2.xhtml" media-type="application/xhtml+xml"/>
+    <item id="cover" href="images/dot.png" media-type="image/png"/>
+  </manifest>
+  <spine toc="ncx">
+    <itemref idref="ch1"/>
+    <itemref idref="ch2"/>
+  </spine>
+</package>
+"""
+    toc_ncx = """<?xml version="1.0" encoding="UTF-8"?>
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+  <navMap>
+    <navPoint id="navPoint-1" playOrder="1">
+      <navLabel><text>1. Calm Typography</text></navLabel>
+      <content src="text/ch1.xhtml"/>
+    </navPoint>
+    <navPoint id="navPoint-2" playOrder="2">
+      <navLabel><text>2. Offline Architecture</text></navLabel>
+      <content src="text/ch2.xhtml"/>
+    </navPoint>
+  </navMap>
+</ncx>
+"""
+    ch1_xhtml = """<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>Chapter 1</title><script>alert('bad')</script></head>
+<body>
+  <h1>1. Calm Typography</h1>
+  <p>Reading comfort on Linux with <a href="ch2.xhtml">Next Chapter</a>.</p>
+  <img src="../images/dot.png" alt="Dot" onerror="alert(1)"/>
+  <h2>Sub-heading Detail</h2>
+  <p>More content here.</p>
+</body>
+</html>
+"""
+    ch2_xhtml = """<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>Chapter 2</title></head>
+<body>
+  <p>Local-first and fast without bloated dependencies.</p>
+</body>
+</html>
+"""
+    with zipfile.ZipFile(epub_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("mimetype", "application/epub+zip")
+        zf.writestr("META-INF/container.xml", container_xml)
+        zf.writestr("OEBPS/content.opf", content_opf)
+        zf.writestr("OEBPS/toc.ncx", toc_ncx)
+        zf.writestr("OEBPS/text/ch1.xhtml", ch1_xhtml)
+        zf.writestr("OEBPS/text/ch2.xhtml", ch2_xhtml)
+        zf.writestr("OEBPS/images/dot.png", tiny_png)
+
+
 class RendererTests(unittest.TestCase):
     def test_frontmatter_stripped_but_leading_hr_kept(self) -> None:
         md_with_fm = "---\ntitle: Note\ntags: [linux]\n---\n\n# Heading\n\nBody text.\n"
@@ -22,6 +99,7 @@ class RendererTests(unittest.TestCase):
         self.assertNotIn("tags:", doc["html"])
         self.assertIn("<h1 id=\"heading\">Heading</h1>", doc["html"])
         self.assertEqual(doc["title"], "Heading")
+        self.assertTrue(doc["editable"])
 
         md_with_hr = "---\n\n# After Rule\n\nStill visible.\n"
         doc2 = renderer.render_markdown_text(md_with_hr, filename="rule.md")
@@ -118,6 +196,79 @@ class RendererTests(unittest.TestCase):
             self.assertEqual(doc["filename"], "sample.md")
             self.assertEqual(doc["title"], "Title")
             self.assertIn("Valid text", doc["html"])
+
+    def test_render_code_files_and_symbol_outline(self) -> None:
+        py_src = (
+            "class ReaderEngine:\n"
+            "    def render_page(self, text: str) -> str:\n"
+            "        return text\n\n"
+            "async def main_loop():\n"
+            "    pass\n"
+        )
+        doc = renderer.render_code_text(py_src, filename="engine.py")
+        self.assertTrue(doc["is_code"])
+        self.assertTrue(doc["editable"])
+        self.assertEqual(doc["language"], "python")
+        self.assertIn('data-code-file="true"', doc["html"])
+        self.assertIn("class ReaderEngine:", doc["html"])
+        toc_texts = [item["text"] for item in doc["toc"]]
+        self.assertIn("ReaderEngine", toc_texts)
+        self.assertIn("render_page", toc_texts)
+        self.assertIn("main_loop", toc_texts)
+
+        with tempfile.TemporaryDirectory() as td:
+            ts_file = Path(td) / "app.tsx"
+            ts_file.write_text(
+                "export interface Props { title: string; }\n"
+                "export function Header(p: Props) { return <h1>{p.title}</h1>; }\n",
+                encoding="utf-8",
+            )
+            ts_doc = renderer.render_document_file(ts_file)
+            self.assertEqual(ts_doc["language"], "tsx")
+            self.assertTrue(ts_doc["is_code"])
+            self.assertIn("&lt;h1&gt;", ts_doc["html"])
+            ts_toc = [item["text"] for item in ts_doc["toc"]]
+            self.assertIn("Props", ts_toc)
+            self.assertIn("Header", ts_toc)
+
+    def test_render_plain_text_file(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            txt_file = Path(td) / "notes.txt"
+            txt_file.write_text(
+                "INTRODUCTION\nWelcome to plain text.\n\nCONFIGURATION\nLine 2 <escaped>.\n",
+                encoding="utf-8",
+            )
+            doc = renderer.render_document_file(txt_file)
+            self.assertEqual(doc["format"], "text")
+            self.assertTrue(doc["editable"])
+            self.assertIn("&lt;escaped&gt;", doc["html"])
+            self.assertEqual(len(doc["toc"]), 2)
+            self.assertEqual(doc["toc"][0]["text"], "Introduction")
+
+    def test_render_epub_file_chapters_toc_images_and_sanitization(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            epub_path = Path(td) / "guide.epub"
+            _build_sample_epub(epub_path)
+
+            doc = renderer.render_document_file(epub_path)
+            self.assertTrue(doc["is_epub"])
+            self.assertFalse(doc["editable"])
+            self.assertEqual(doc["title"], "Coconut Field Guide")
+            self.assertEqual(doc["author"], "Maximiliano Cano")
+            self.assertEqual(doc["chapter_count"], 2)
+
+            toc_titles = [item["text"] for item in doc["toc"]]
+            self.assertIn("1. Calm Typography", toc_titles)
+            self.assertIn("2. Offline Architecture", toc_titles)
+            self.assertIn("Sub-heading Detail", toc_titles)
+
+            html_out = doc["html"]
+            self.assertIn('id="epub-chapter-1"', html_out)
+            self.assertIn('id="epub-chapter-2"', html_out)
+            self.assertIn('href="#epub-chapter-2"', html_out)
+            self.assertIn("data:image/png;base64,", html_out)
+            self.assertNotIn("<script", html_out.lower())
+            self.assertNotIn("onerror", html_out.lower())
 
 
 if __name__ == "__main__":
